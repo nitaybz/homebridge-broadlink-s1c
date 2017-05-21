@@ -1,0 +1,37 @@
+{
+  "name": "homebridge-broadlink-s1c",
+  "version": "0.1.0",
+  "description": "Homebridge plugin for Broadlink S1C",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \\\"Error: no test specified\\\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nitaybz/homebridge-broadlink-s1c.git"
+  },
+  "keywords": [
+    "homebridge-plugin",
+    "broadlink",
+    "plugin",
+    "homebridge",
+    "s1c",
+    "smartone",
+    "security",
+    "alarm"
+  ],
+  "engines": {
+    "node": ">=0.12.0",
+    "homebridge": ">=0.2.0"
+  },
+  "author": "smka",
+  "license": "MIT",
+  "dependencies": {
+    "broadlinkjs-s1c": "nitaybz/broadlinkjs-s1c"
+  },
+  "bugs": {
+    "url": "https://github.com/nitaybz/homebridge-broadlink-s1c/issues"
+  },
+  "homepage": "https://github.com/nitaybz/homebridge-broadlink-s1c#readme",
+  "devDependencies": {}
+}
