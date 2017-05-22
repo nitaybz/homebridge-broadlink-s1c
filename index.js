@@ -22,16 +22,19 @@ function broadlinkS1C(log, config, api) {
     
     
     var b = new broadlink();
-    this.log("Discovering");
     b.discover();
+    this.log("Discovering");
     b.on("deviceReady", (dev) => {
+        this.log("deviceReady");
         if (dev.type == "S1C") {
+            this.log("S1C Detected");
             dev.get_sensors_status();
             dev.on("sensors_status", (status_array) => {
                 dev.exit();
                 clearInterval(refresh);
                 this.count = status_array["count"];
                 this.sensors = status_array["sensors"];
+                this.log("count is" + this.count);
             });
         } else {
             console.log(dev.type + "@" + dev.host.address + " found... not S1C!");
@@ -51,7 +54,7 @@ broadlinkS1C.prototype = {
         //For each device in cfg, create an accessory!
         var myAccessories = [];
         var foundSensor = [{}];
-        console.log("Creating Accessories");
+        this.log("Creating Accessories");
         for (var i = 0; i < this.count; i++) {
                     if (sensors[i].type == ("Motion Sensor" || "Door Sensor")) {
                         foundSensor[i].accessoryName = this.name;
