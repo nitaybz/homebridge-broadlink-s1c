@@ -2,7 +2,6 @@ var Service, Characteristic;
 var broadlink = require('broadlinkjs-s1c');
 
 module.exports = function(homebridge) {
-    console.log(homebridge);
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
     //UUIDGen = homebridge.hap.uuid;
@@ -52,6 +51,7 @@ broadlinkS1C.prototype = {
         //For each device in cfg, create an accessory!
         var myAccessories = [];
         var foundSensor = [{}];
+        console.log("Creating Accessories");
         for (var i = 0; i < this.count; i++) {
                     if (sensors[i].type == ("Motion Sensor" || "Door Sensor")) {
                         foundSensor[i].accessoryName = this.name;
