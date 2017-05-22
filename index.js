@@ -72,6 +72,7 @@ function BroadlinkSensor(log, config) {
     this.config = config;
     this.serial = config.serial || "";
     this.type = config.type;
+    this.sensorName = config.sensorName;
     this.name = config.accessoryName +"_"+ config.sensorName;
     this.ip = config.ip;
     this.mac = config.mac;
@@ -109,14 +110,14 @@ BroadlinkSensor.prototype = {
             
         if (this.type == "Motion Sensor"){
             console.log("found motion sensor");
-            var MotionService = new Service.MotionSensor(this.name);
+            var MotionService = new Service.MotionSensor(sensorName);
             MotionService
                 .getCharacteristic(Characteristic.MotionDetected)
                 .on('get', this.getState.bind(this));
             return [MotionService, informationService];
         } else if (this.type == "Door Sensor"){
             console.log("found door sensor");
-            var DoorService = new Service.ContactSensor(this.name);
+            var DoorService = new Service.ContactSensor(sensorName);
             DoorService
                 .getCharacteristic(Characteristic.ContactSensorState)
                 .on('get', this.getState.bind(this));
@@ -143,12 +144,12 @@ BroadlinkSensor.prototype = {
                             if (sensors[i].status = 0) {
                             self.detected = false;
                             self.log(self.name + " detected state is - " + self.detected);
-                            return callback(null, false);
-                        } else {
-                            self.detected = true;
-                            self.log(self.name + " detected state is - " + self.detected);
-                            return callback(null, true);
-                        }
+                            return callback(null, 1);
+                            } else {
+                                self.detected = true;
+                                self.log(self.name + " detected state is - " + self.detected);
+                                return callback(null, 0);
+                            }
                         }
                     }
                 });
