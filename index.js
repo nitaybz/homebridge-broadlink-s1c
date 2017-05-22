@@ -2,6 +2,7 @@ var Service, Characteristic;
 var broadlink = require('broadlinkjs-s1c');
 
 module.exports = function(homebridge) {
+    console.log(homebridge);
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
     //UUIDGen = homebridge.hap.uuid;
