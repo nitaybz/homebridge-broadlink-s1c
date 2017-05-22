@@ -108,8 +108,8 @@ function BroadlinkSensor(log, config) {
     } else if (this.type == "Door Sensor"){
         console.log("found door sensor");
         this.service = new Service.ContactSensor(this.sensorName);
-        this.service
-            .getCharacteristic(Characteristic.ContactSensorState)
+        //this.service
+        //    .getCharacteristic(Characteristic.ContactSensorState)
         //     .on('get', this.getState.bind(this));
     }
     
@@ -132,13 +132,13 @@ function BroadlinkSensor(log, config) {
                             if (sensors[i].type = "Motion Sensor") {
                                 // self.service.getCharacteristic(Characteristic.MotionDetected).setValue(sensors[i].status = 1 ?
 				                //     true: false);
-                                self.detected = sensors[i].status = 1 ? true : false;
-                                self.log(self.name + " detected state is - " + self.detected);
+                                self.detected = sensors[i].status = 1;
+                                self.log(" detected state for " +self.name +" is - " + self.detected);
                             } else if (sensors[i].type = "Door Sensor") {
                                 self.service.getCharacteristic(Characteristic.ContactSensorState).setValue(sensors[i].status = 1 ?
 				                    Characteristic.ContactSensorState.CONTACT_DETECTED : Characteristic.ContactSensorState.CONTACT_NOT_DETECTED);
-                                self.detected = sensors[i].status = 1 ? true : false;
-                                self.log(self.name + " detected state is - " + self.detected);
+                                self.detected = sensors[i].status = 1;
+                                self.log(" detected state for " +self.name +" is - " + self.detected);
                             }
                         }
                     }
@@ -155,7 +155,7 @@ function BroadlinkSensor(log, config) {
     var self = this
     this.timer = setInterval(function(){
         self.intervalCheck();
-    }, 5000);
+    }, 10000);
 
 }
 
