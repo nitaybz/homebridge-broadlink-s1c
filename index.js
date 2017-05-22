@@ -72,8 +72,8 @@ function BroadlinkSensor(log, config) {
     this.config = config;
     this.serial = config.serial || "";
     this.type = config.type;
-    this.sensorName = config.sensorName.toString('utf8').substring(0,22);
-    this.name = config.accessoryName +"_"+ config.sensorName.toString('utf8').substring(0,22);
+    this.sensorName = config.sensorName.toString('utf8').substring(0,20);
+    this.name = config.sensorName.toString('utf8').substring(0,20);
     this.ip = config.ip;
     this.mac = config.mac;
     this.detected = false;
