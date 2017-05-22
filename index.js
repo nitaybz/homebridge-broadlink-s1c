@@ -126,11 +126,14 @@ function BroadlinkSensor(log, config) {
                     for (var i=0; i<count; i++){
                         if (self.serial == sensors[i].serial){
                             self.log(self.name + " sensor state is - " + sensors[i].status);
+                            lastDetected = self.detected;
                             self.detected = (sensors[i].status == 1 ? true : false);
                             self.log(" detected state for " +self.name +" is - " + self.detected);
-                            if (sensors[i].type == "Door Sensor") {
+                            if (sensors[i].type == "Motion Sensor" && self.detected !== lastDetected) {
+                                self.service.getCharacteristic(Characteristic.MotionDetected).setValue(self.detected, undefined);
+                            } else if (sensors[i].type == "Door Sensor" && self.detected !== lastDetected) {
                                 self.service.getCharacteristic(Characteristic.ContactSensorState).setValue(sensors[i].status == 1 ?
-				                    Characteristic.ContactSensorState.CONTACT_DETECTED : Characteristic.ContactSensorState.CONTACT_NOT_DETECTED);
+				                    Characteristic.ContactSensorState.CONTACT_NOT_DETECTED : Characteristic.ContactSensorState.CONTACT_DETECTED);
                             }
                         }
                     }
