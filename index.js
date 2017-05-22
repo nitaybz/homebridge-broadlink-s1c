@@ -40,7 +40,7 @@ broadlinkS1C.prototype = {
                     var sensors = status_array["sensors"];
                     this.log("count is" + count);
                     this.log("Creating Accessories");
-                    for (var i = 0; i < this.count; i++) {
+                    for (var i = 0; i < count; i++) {
                         if (sensors[i].type == ("Motion Sensor" || "Door Sensor")) {
                             foundSensor[i].accessoryName = this.name;
                             foundSensor[i].sensorName = sensors[i].name;
