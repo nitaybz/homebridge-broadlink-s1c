@@ -102,7 +102,6 @@ function BroadlinkSensor(log, config) {
 BroadlinkSensor.prototype = {
     getServices: function() {
         this.log("getting Service for " + this.type);
-        this.service = 
             
         if (this.type == "Motion Sensor"){
             console.log("found motion sensor");
