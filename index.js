@@ -43,7 +43,7 @@ broadlinkS1C.prototype = {
                         if ((sensors[i].type == "Motion Sensor") || (sensors[i].type ==  "Door Sensor")) {
                             var foundSensor = {};
                             foundSensor.accessoryName = this.name;
-                            foundSensor.sensorName = sensors[i].name;
+                            foundSensor.sensorName = sensors[i].name.substring(0,22);
                             foundSensor.serial = sensors[i].serial;
                             foundSensor.type = sensors[i].type;
                             foundSensor.ip = this.ip;
@@ -79,7 +79,7 @@ function BroadlinkSensor(log, config) {
     this.detected = false;
     this.name = this.name.toString()
     this.log("something" + this.name + " Something");
-    this.log("something" + this.sensorName.toString() + "sensor Something");
+    this.log("something" + this.sensorName + " Sensor Something");
     if (!this.ip && !this.mac) throw new Error("You must provide a config value for 'ip' or 'mac'.");
 
     // MAC string to MAC buffer
