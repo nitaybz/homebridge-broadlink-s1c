@@ -103,8 +103,8 @@ function BroadlinkSensor(log, config) {
         console.log("found motion sensor");
         this.service = new Service.MotionSensor(this.sensorName);
         this.service
-             .getCharacteristic(Characteristic.MotionDetected)
-        //    .on('get', this.getState.bind(this));
+            .getCharacteristic(Characteristic.MotionDetected)
+            .on('get', this.getState.bind(this));
     } else if (this.type == "Door Sensor"){
         console.log("found door sensor");
         this.service = new Service.ContactSensor(this.sensorName);
@@ -130,8 +130,8 @@ function BroadlinkSensor(log, config) {
                         if (self.serial == sensors[i].serial){
                             self.log(self.name + " sensor state is - " + sensors[i].status);
                             if (sensors[i].type = "Motion Sensor") {
-                                self.service.getCharacteristic(Characteristic.MotionDetected).setValue(sensors[i].status = 1 ?
-				                    true: false);
+                                // self.service.getCharacteristic(Characteristic.MotionDetected).setValue(sensors[i].status = 1 ?
+				                //     true: false);
                                 self.detected = sensors[i].status = 1 ? true : false;
                                 self.log(self.name + " detected state is - " + self.detected);
                             } else if (sensors[i].type = "Door Sensor") {
