@@ -134,12 +134,10 @@ function BroadlinkSensor(log, config) {
                                 self.service.setCharacteristic(Characteristic.MotionDetected, (sensors[i].status = 1 ? true : false));
                                 self.detected = sensors[i].status = 1 ? true : false;
                                 self.log(self.name + " detected state is - " + self.detected);
-                                return callback(null. self.detected);
                             } else if (sensors[i].type = "Door Sensor") {
                                 self.service.setCharacteristic(Characteristic.ContactSensorState, (sensors[i].status = 1 ? Characteristic.ContactSensorState.CONTACT_DETECTED : Characteristic.ContactSensorState.CONTACT_NOT_DETECTED));
                                 self.detected = sensors[i].status = 1 ? true : false;
                                 self.log(self.name + " detected state is - " + self.detected);
-                                return callback(null, self.detected);
                             }
                         }
                     }
@@ -167,5 +165,10 @@ BroadlinkSensor.prototype = {
             .setCharacteristic(Characteristic.SerialNumber, this.serial);
         
         return [this.service, informationService];
+    },
+
+    getState: function(callback) {
+		this.log(this.name + " callback with - " + self.detected);
+		callback(null, this.detected);
     }
 }
