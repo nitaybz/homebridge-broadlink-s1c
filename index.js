@@ -152,7 +152,7 @@ function BroadlinkSensor(log, config) {
 
     };
 
-    setInterval(function(){
+    this.timer = setInterval(function(){
         this.intervalCheck();
     }, 5000);
 
