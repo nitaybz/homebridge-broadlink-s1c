@@ -23,7 +23,7 @@
   "engines": {
     "homebridge": ">=0.2.0"
   },
-  "author": "smka",
+  "author": "nitaybz",
   "license": "MIT",
   "dependencies": {
     "broadlinkjs-s1c": "nitaybz/broadlinkjs-s1c"
