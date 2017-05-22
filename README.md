@@ -4,7 +4,7 @@ Broadlink S1C plugin for [Homebridge](https://github.com/nfarina/homebridge/).
 This plugins only reads the status of the current sensors.
 no ability to control the alarm state (yet).
 
-Inspired and forked from [homebridge-broadlink-platform](https://github.com/smka/homebridge-broadlink-platform) [@smka](https://github.com/smka)
+Inspired and forked from [homebridge-broadlink-platform](https://github.com/smka/homebridge-broadlink-platform) By [@smka](https://github.com/smka)
 
 # Installation
 0. Config your S1C device  and sensors with default e-Control app (for the first time)
