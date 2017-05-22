@@ -43,7 +43,7 @@ broadlinkS1C.prototype = {
                         if ((sensors[i].type == "Motion Sensor") || (sensors[i].type ==  "Door Sensor")) {
                             var foundSensor = {};
                             foundSensor.accessoryName = this.name;
-                            foundSensor.sensorName = sensors[i].name.substring(0,22);
+                            foundSensor.sensorName = sensors[i].name.toString('utf8').substring(0,22);
                             foundSensor.serial = sensors[i].serial;
                             foundSensor.type = sensors[i].type;
                             foundSensor.ip = this.ip;
