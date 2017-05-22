@@ -25,10 +25,7 @@ broadlinkS1C.prototype = {
         //For each device in cfg, create an accessory!
         var myAccessories = [];
         var b = new broadlink();
-        b.discover();
-        this.log("Discovering");
         b.on("deviceReady", (dev) => {
-            this.log("deviceReady");
             if (dev.type == "S1C") {
                 this.log("S1C Detected");
                 dev.get_sensors_status();
@@ -37,8 +34,6 @@ broadlinkS1C.prototype = {
                     clearInterval(refresh);
                     var count = status_array["count"];
                     var sensors = status_array["sensors"];
-                    this.log("count is " + count);
-                    this.log("Creating Accessories");
                     for (var i = 0; i < count; i++) {
                         if ((sensors[i].type == "Motion Sensor") || (sensors[i].type ==  "Door Sensor")) {
                             var foundSensor = {};
@@ -94,22 +89,17 @@ function BroadlinkSensor(log, config) {
         }
         return mb;
     }
-    this.log("getting Service for " + this.type);
             
     if (this.type == "Motion Sensor"){
-        console.log("found motion sensor");
+        console.log("Found Motion Sensor");
         this.service = new Service.MotionSensor(this.name);
         this.service
             .getCharacteristic(Characteristic.MotionDetected)
             .on('get', this.getState.bind(this));
     } else if (this.type == "Door Sensor"){
-        console.log("found door sensor");
+        console.log("Found Door sensor");
         this.service = new Service.ContactSensor(this.name);
-        //this.service
-        //    .getCharacteristic(Characteristic.ContactSensorState)
-        //     .on('get', this.getState.bind(this));
     }
-    
     this.intervalCheck = function(){
         var self = this;
         var b = new broadlink();
@@ -125,13 +115,13 @@ function BroadlinkSensor(log, config) {
                     clearInterval(checkAgain);
                     for (var i=0; i<count; i++){
                         if (self.serial == sensors[i].serial){
-                            self.log(self.name + " sensor state is - " + sensors[i].status);
                             lastDetected = self.detected;
                             self.detected = (sensors[i].status == 1 ? true : false);
-                            self.log(" detected state for " +self.name +" is - " + self.detected);
                             if (sensors[i].type == "Motion Sensor" && self.detected !== lastDetected) {
+                                self.log(self.name + " state is - " + sensors[i].status);
                                 self.service.getCharacteristic(Characteristic.MotionDetected).setValue(self.detected, undefined);
                             } else if (sensors[i].type == "Door Sensor" && self.detected !== lastDetected) {
+                                self.log(self.name + " state is - " + sensors[i].status);
                                 self.service.getCharacteristic(Characteristic.ContactSensorState).setValue(sensors[i].status == 1 ?
 				                    Characteristic.ContactSensorState.CONTACT_NOT_DETECTED : Characteristic.ContactSensorState.CONTACT_DETECTED);
                             }
@@ -151,7 +141,7 @@ function BroadlinkSensor(log, config) {
     self.intervalCheck();
     this.timer = setInterval(function(){
         self.intervalCheck();
-    }, 5000);
+    }, 2000);
 
 }
 
@@ -167,7 +157,6 @@ BroadlinkSensor.prototype = {
     },
 
     getState: function(callback) {
-		this.log(this.name + " callback with - " + this.detected);
 		callback(null, this.detected);
     }
 }
