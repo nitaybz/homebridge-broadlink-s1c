@@ -24,7 +24,6 @@ broadlinkS1C.prototype = {
     accessories: function(callback) {
         //For each device in cfg, create an accessory!
         var myAccessories = [];
-        var foundSensor = [{}];
         var b = new broadlink();
         b.discover();
         this.log("Discovering");
@@ -42,13 +41,14 @@ broadlinkS1C.prototype = {
                     this.log("Creating Accessories");
                     for (var i = 0; i < count; i++) {
                         if (sensors[i].type == ("Motion Sensor" || "Door Sensor")) {
-                            foundSensor[i].accessoryName = this.name;
-                            foundSensor[i].sensorName = sensors[i].name;
-                            foundSensor[i].serial = sensors[i].serial;
-                            foundSensor[i].type = sensors[i].type;
-                            foundSensor[i].ip = this.ip;
-                            foundSensor[i].mac = this.mac;
-                            var accessory = new BroadlinkSensor(this.log, foundSensor[i]);
+                            var foundSensor = {};
+                            foundSensor.accessoryName = this.name;
+                            foundSensor.sensorName = sensors[i].name;
+                            foundSensor.serial = sensors[i].serial;
+                            foundSensor.type = sensors[i].type;
+                            foundSensor.ip = this.ip;
+                            foundSensor.mac = this.mac;
+                            var accessory = new BroadlinkSensor(this.log, foundSensor);
                             myAccessories.push(accessory);
                             this.log('Created ' + foundSensor[i].accessoryName + "  - " + foundSensor[i].type +' Named: ' + foundSensor[i].sensorName);
                         }
