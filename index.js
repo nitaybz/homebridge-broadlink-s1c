@@ -126,10 +126,9 @@ function BroadlinkSensor(log, config) {
                     var count = status_array["count"];
                     dev.exit();
                     clearInterval(checkAgain);
-                    
                     for (var i=0; i<count; i++){
                         if (self.serial == sensors[i].serial){
-                            self.log(self.name + " sensor state is - " + sensor[i].status);
+                            self.log(self.name + " sensor state is - " + sensors[i].status);
                             if (sensors[i].type = "Motion Sensor") {
                                 self.service.setCharacteristic(Characteristic.MotionDetected, (sensors[i].status = 1 ? true : false));
                                 self.detected = sensors[i].status = 1 ? true : false;
