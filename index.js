@@ -102,14 +102,14 @@ function BroadlinkSensor(log, config) {
     if (this.type == "Motion Sensor"){
         console.log("found motion sensor");
         this.service = new Service.MotionSensor(this.sensorName);
-        // this.service
-        //     .getCharacteristic(Characteristic.MotionDetected)
-        //     .on('get', this.getState.bind(this));
+        this.service
+             .getCharacteristic(Characteristic.MotionDetected)
+        //    .on('get', this.getState.bind(this));
     } else if (this.type == "Door Sensor"){
         console.log("found door sensor");
         this.service = new Service.ContactSensor(this.sensorName);
-        // this.service
-        //     .getCharacteristic(Characteristic.ContactSensorState)
+        this.service
+            .getCharacteristic(Characteristic.ContactSensorState)
         //     .on('get', this.getState.bind(this));
     }
     
