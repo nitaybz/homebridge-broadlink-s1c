@@ -1,67 +1,79 @@
-var Accessory, Service, Characteristic, UUIDGen;
+var Service, Characteristic;
 var broadlink = require('broadlinkjs-s1c');
 
 module.exports = function(homebridge) {
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
-    UUIDGen = homebridge.hap.uuid;
+    //UUIDGen = homebridge.hap.uuid;
     homebridge.registerPlatform("homebridge-broadlink-s1c", "broadlinkS1C", broadlinkS1C);
 }
 
 function broadlinkS1C(log, config, api) {
     this.log = log;
     this.config = config;
-
+    this.name = config.name;
+    this.ip = config.ip;
+    this.mac = config.mac;
     if (api) {
         this.api = api;
     }
+
+    this.log("Discovering");
+    
+    
+    var b = new broadlink();
+    this.log("Discovering");
+    b.discover();
+    b.on("deviceReady", (dev) => {
+        if (dev.type == "S1C") {
+            dev.get_sensors_status();
+            dev.on("sensors_status", (status_array) => {
+                dev.exit();
+                clearInterval(refresh);
+                this.count = status_array["count"];
+                this.sensors = status_array["sensors"];
+            });
+        } else {
+            console.log(dev.type + "@" + dev.host.address + " found... not S1C!");
+            dev.exit();
+        }
+    });
+    var refresh = setInterval(function(){
+        b.discover();
+    }, 1000);
+
+
 
 }
 
 broadlinkS1C.prototype = {
     accessories: function(callback) {
         //For each device in cfg, create an accessory!
-        var foundSensor = this.config.accessories;
         var myAccessories = [];
-        var b = new broadlink();
-        b.discover();
-        b.on("deviceReady", (dev) => {
-            if (dev.type == "S1C") {
-                dev.get_sensors_status();
-                dev.on("sensors_status", (status_array) => {
-                    var count = status_array["count"];
-                    var sensors = status_array["sensors"];
-                    clearInterval(refresh);
-                    for (var i = 0; i < count; i++) {
-                        if (sensors[i].type == ("Motion Sensor" || "Door Sensor")) {
-                            foundSensor[i].sensorName = sensors[i].name;
-                            foundSensor[i].serial = sensors[i].serial;
-                            foundSensor[i].type = sensors[i].type;
-                            var accessory = new BroadlinkSensor(this.log, foundSensor[i]);
-                            myAccessories.push(accessory);
-                            this.log('Created ' + accessory.name + accessory.type +' Named: ' + accessory.sensorName);
-                        }
+        var foundSensor = [{}];
+        for (var i = 0; i < this.count; i++) {
+                    if (sensors[i].type == ("Motion Sensor" || "Door Sensor")) {
+                        foundSensor[i].accessoryName = this.name;
+                        foundSensor[i].sensorName = this.sensors[i].name;
+                        foundSensor[i].serial = this.sensors[i].serial;
+                        foundSensor[i].type = this.sensors[i].type;
+                        foundSensor[i].ip = this.sensors[i].ip;
+                        foundSensor[i].mac = this.sensors[i].mac;
+                        var accessory = new BroadlinkSensor(this.log, foundSensor[i]);
+                        myAccessories.push(accessory);
+                        this.log('Created ' + foundSensor[i].accessoryName + " " + foundSensor[i].type +' Named: ' + foundSensor[i].sensorName);
                     }
-                    callback(myAccessories);
-                });
-            } else {
-                console.log(dev.type + "@" + dev.host.address + " found... not S1C!");
-                dev.exit();
-            }
-        });
-        var refresh = setInterval(function(){
-            b.discover();
-        }, 1000);
+                }
+        callback(myAccessories);
     }
 }
 
 function BroadlinkSensor(log, config) {
     this.log = log;
     this.config = config;
-    this.sname = config.sensorName || "";
-    this.serial = config.serial || "";
+    this.serial = sconfig.serial || "";
     this.type = config.type;
-    this.name = config.name + +"_"+ this.sname;
+    this.name = config.name + +"_"+ config.sensorName;
     this.ip = config.ip;
     this.mac = config.mac;
     this.detected = false;
@@ -89,27 +101,28 @@ function BroadlinkSensor(log, config) {
 
 BroadlinkSensor.prototype = {
     getServices: function() {
-        var services = [];
+        this.log("getting Service for " + this.type);
         var informationService = new Service.AccessoryInformation();
         informationService
             .setCharacteristic(Characteristic.Manufacturer, 'Broadlink S1C')
             .setCharacteristic(Characteristic.Model, this.type)
             .setCharacteristic(Characteristic.SerialNumber, this.serial);
+            
         if (this.type == "Motion Sensor"){
-            var MotionhService = new Service.MotionSensor(this.name, UUIDGen.generate(this.serial));
-            MotionhService
+            console.log("found motion sensor");
+            var MotionService = new Service.MotionSensor(this.name);
+            MotionService
                 .getCharacteristic(Characteristic.MotionDetected)
                 .on('get', this.getState.bind(this));
+            return [MotionService, informationService];
         } else if (this.type == "Door Sensor"){
-            var DoorService = new Service.ContactSensor(this.name, UUIDGen.generate(this.serial));
+            console.log("found door sensor");
+            var DoorService = new Service.ContactSensor(this.name);
             DoorService
                 .getCharacteristic(Characteristic.ContactSensorState)
                 .on('get', this.getState.bind(this));
+            return [DoorService, informationService];
         }
-        
-        services.push(switchService, informationService);
-
-        return services;
     },
 
     getState: function(callback) {
