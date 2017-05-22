@@ -128,7 +128,7 @@ function BroadlinkSensor(log, config) {
                             self.log(self.name + " sensor state is - " + sensors[i].status);
                             self.detected = (sensors[i].status == 1 ? true : false);
                             self.log(" detected state for " +self.name +" is - " + self.detected);
-                            if (sensors[i].type = "Door Sensor") {
+                            if (sensors[i].type == "Door Sensor") {
                                 self.service.getCharacteristic(Characteristic.ContactSensorState).setValue(sensors[i].status == 1 ?
 				                    Characteristic.ContactSensorState.CONTACT_DETECTED : Characteristic.ContactSensorState.CONTACT_NOT_DETECTED);
                             }
