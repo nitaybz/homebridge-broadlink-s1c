@@ -113,7 +113,7 @@ function BroadlinkSensor(log, config) {
         //     .on('get', this.getState.bind(this));
     }
     
-    this.intervalCheck = function(){
+    this.intervalCheck = function(this){
         var self = this;
         var b = new broadlink();
         b.discover();
@@ -153,7 +153,8 @@ function BroadlinkSensor(log, config) {
     };
 
     setInterval(function(this){
-        this.intervalCheck();
+    	var self = this
+        self.intervalCheck(self);
     }, 5000);
 
 }
