@@ -97,35 +97,23 @@ function BroadlinkSensor(log, config) {
         }
         return mb;
     }
-}
-
-BroadlinkSensor.prototype = {
-    getServices: function() {
-        this.log("getting Service for " + this.type);
+    this.log("getting Service for " + this.type);
             
-        if (this.type == "Motion Sensor"){
-            console.log("found motion sensor");
-            this.service = new Service.MotionSensor(this.sensorName);
-            this.service
-                .getCharacteristic(Characteristic.MotionDetected)
-                .on('get', this.getState.bind(this));
-        } else if (this.type == "Door Sensor"){
-            console.log("found door sensor");
-            this.service = new Service.ContactSensor(this.sensorName);
-            this.service
-                .getCharacteristic(Characteristic.ContactSensorState)
-                .on('get', this.getState.bind(this));
-        }
-        var informationService = new Service.AccessoryInformation();
-        informationService
-            .setCharacteristic(Characteristic.Manufacturer, 'Broadlink S1C')
-            .setCharacteristic(Characteristic.Model, this.type)
-            .setCharacteristic(Characteristic.SerialNumber, this.serial);
-        
-        return [this.service, informationService];
-    },
-
-    getState: function(callback) {
+    if (this.type == "Motion Sensor"){
+        console.log("found motion sensor");
+        this.service = new Service.MotionSensor(this.sensorName);
+        // this.service
+        //     .getCharacteristic(Characteristic.MotionDetected)
+        //     .on('get', this.getState.bind(this));
+    } else if (this.type == "Door Sensor"){
+        console.log("found door sensor");
+        this.service = new Service.ContactSensor(this.sensorName);
+        // this.service
+        //     .getCharacteristic(Characteristic.ContactSensorState)
+        //     .on('get', this.getState.bind(this));
+    }
+    
+    this.intervalCheck = function(this){
         var self = this;
         var b = new broadlink();
         b.discover();
@@ -143,12 +131,12 @@ BroadlinkSensor.prototype = {
                         if (self.serial == sensors[i].serial){
                             self.log(self.name + " sensor state is - " + sensor[i].status);
                             if (sensors[i].type = "Motion Sensor") {
-                                //self.service.setCharacteristic(Characteristic.MotionDetected, (sensors[i].status = 1 ? true : false));
+                                self.service.setCharacteristic(Characteristic.MotionDetected, (sensors[i].status = 1 ? true : false));
                                 self.detected = sensors[i].status = 1 ? true : false;
                                 self.log(self.name + " detected state is - " + self.detected);
                                 return callback(null. self.detected);
                             } else if (sensors[i].type = "Door Sensor") {
-                                //self.service.setCharacteristic(Characteristic.ContactSensorState, (sensors[i].status = 1 ? Characteristic.ContactSensorState.CONTACT_DETECTED : Characteristic.ContactSensorState.CONTACT_NOT_DETECTED));
+                                self.service.setCharacteristic(Characteristic.ContactSensorState, (sensors[i].status = 1 ? Characteristic.ContactSensorState.CONTACT_DETECTED : Characteristic.ContactSensorState.CONTACT_NOT_DETECTED));
                                 self.detected = sensors[i].status = 1 ? true : false;
                                 self.log(self.name + " detected state is - " + self.detected);
                                 return callback(null, self.detected);
@@ -164,5 +152,20 @@ BroadlinkSensor.prototype = {
             b.discover();
         }, 1000)
 
+    };
+
+    setInterval(this.intervalCheck(), 5000);
+
+}
+
+BroadlinkSensor.prototype = {
+    getServices: function() {
+        var informationService = new Service.AccessoryInformation();
+        informationService
+            .setCharacteristic(Characteristic.Manufacturer, 'Broadlink S1C')
+            .setCharacteristic(Characteristic.Model, this.type)
+            .setCharacteristic(Characteristic.SerialNumber, this.serial);
+        
+        return [this.service, informationService];
     }
 }
