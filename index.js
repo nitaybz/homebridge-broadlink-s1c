@@ -40,7 +40,7 @@ broadlinkS1C.prototype = {
                     this.log("count is " + count);
                     this.log("Creating Accessories");
                     for (var i = 0; i < count; i++) {
-                        if (sensors[i].type == ("Motion Sensor" || "Door Sensor")) {
+                        if ((sensors[i].type == "Motion Sensor") || (sensors[i].type ==  "Door Sensor")) {
                             var foundSensor = {};
                             foundSensor.accessoryName = this.name;
                             foundSensor.sensorName = sensors[i].name;
@@ -137,14 +137,16 @@ BroadlinkSensor.prototype = {
                     var count = status_array["count"];
                     dev.exit();
                     clearInterval(checkAgain);
-                    self.log(self.name + self.sname + " power is on - " + pwr);
+                    
                     for (var i=0; i<count; i++){
                         if (self.serial == sensors[i].serial){
                             if (sensors[i].status = 0) {
                             self.detected = false;
+                            self.log(self.name + " detected state is - " + self.detected);
                             return callback(null, false);
                         } else {
                             self.detected = true;
+                            self.log(self.name + " detected state is - " + self.detected);
                             return callback(null, true);
                         }
                         }
