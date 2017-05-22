@@ -77,7 +77,8 @@ function BroadlinkSensor(log, config) {
     this.ip = config.ip;
     this.mac = config.mac;
     this.detected = false;
-
+    this.name = this.name.toString()
+    this.log(this.name + " Something")
     if (!this.ip && !this.mac) throw new Error("You must provide a config value for 'ip' or 'mac'.");
 
     // MAC string to MAC buffer
