@@ -144,10 +144,11 @@ function BroadlinkSensor(log, config) {
         }, 1000)
 
     };
-    var self = this
+    var self = this;
+    self.intervalCheck();
     this.timer = setInterval(function(){
         self.intervalCheck();
-    }, 10000);
+    }, 5000);
 
 }
 
@@ -163,7 +164,7 @@ BroadlinkSensor.prototype = {
     },
 
     getState: function(callback) {
-		this.log(this.name + " callback with - " + self.detected);
+		this.log(this.name + " callback with - " + this.detected);
 		callback(null, this.detected);
     }
 }
