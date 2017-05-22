@@ -42,7 +42,6 @@ broadlinkS1C.prototype = {
                     for (var i = 0; i < count; i++) {
                         if ((sensors[i].type == "Motion Sensor") || (sensors[i].type ==  "Door Sensor")) {
                             var foundSensor = {};
-                            foundSensor.accessoryName = this.name;
                             foundSensor.sensorName = sensors[i].name;
                             foundSensor.serial = sensors[i].serial;
                             foundSensor.type = sensors[i].type;
@@ -72,16 +71,10 @@ function BroadlinkSensor(log, config) {
     this.config = config;
     this.serial = config.serial || "";
     this.type = config.type;
-    
-    this.sensorName = config.sensorName.toString('utf8').replace(/\0/g, '');
-    this.name = config.sensorName.toString('utf8').replace(/\0/g, '');
-
-    this.log("sensorName Length is " + this.sensorName.length);
+    this.name = config.sensorName;
     this.ip = config.ip;
     this.mac = config.mac;
     this.detected = false;
-    this.log("something" + this.name + " Something");
-    this.log("something" + this.sensorName + " Sensor Something");
     if (!this.ip && !this.mac) throw new Error("You must provide a config value for 'ip' or 'mac'.");
 
     // MAC string to MAC buffer
@@ -105,13 +98,13 @@ function BroadlinkSensor(log, config) {
             
     if (this.type == "Motion Sensor"){
         console.log("found motion sensor");
-        this.service = new Service.MotionSensor(this.sensorName);
+        this.service = new Service.MotionSensor(this.name);
         this.service
             .getCharacteristic(Characteristic.MotionDetected)
             .on('get', this.getState.bind(this));
     } else if (this.type == "Door Sensor"){
         console.log("found door sensor");
-        this.service = new Service.ContactSensor(this.sensorName);
+        this.service = new Service.ContactSensor(this.name);
         //this.service
         //    .getCharacteristic(Characteristic.ContactSensorState)
         //     .on('get', this.getState.bind(this));
