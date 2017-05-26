@@ -71,7 +71,7 @@ function BroadlinkSensor(log, config) {
     this.mac = config.mac;
     this.detected = false;
     if (!this.ip && !this.mac) throw new Error("You must provide a config value for 'ip' or 'mac'.");
-
+    var lastDetected;
     // MAC string to MAC buffer
     this.mac_buff = function(mac) {
         var mb = new Buffer(6);
@@ -112,16 +112,16 @@ function BroadlinkSensor(log, config) {
                     var sensors = status_array["sensors"];
                     var count = status_array["count"];
                     dev.exit();
-                    clearInterval(checkAgain);
+                    //clearInterval(checkAgain);
                     for (var i=0; i<count; i++){
                         if (self.serial == sensors[i].serial){
                             lastDetected = self.detected;
                             self.detected = (sensors[i].status == 1 ? true : false);
                             if (sensors[i].type == "Motion Sensor" && self.detected !== lastDetected) {
-                                self.log(self.name + " state is - " + sensors[i].status);
+                                self.log(self.name + " state is - " + (self.detected ? "Person Detected" : "No Person"));
                                 self.service.getCharacteristic(Characteristic.MotionDetected).setValue(self.detected, undefined);
                             } else if (sensors[i].type == "Door Sensor" && self.detected !== lastDetected) {
-                                self.log(self.name + " state is - " + sensors[i].status);
+                                self.log(self.name + " state is - " + (self.detected ? "Open" : "Close"));
                                 self.service.getCharacteristic(Characteristic.ContactSensorState).setValue(sensors[i].status == 1 ?
 				                    Characteristic.ContactSensorState.CONTACT_NOT_DETECTED : Characteristic.ContactSensorState.CONTACT_DETECTED);
                             }
@@ -132,9 +132,9 @@ function BroadlinkSensor(log, config) {
                 dev.exit();
             }
         });
-        var checkAgain = setInterval(function() {
-            b.discover();
-        }, 1000)
+//         var checkAgain = setInterval(function() {
+//             b.discover();
+//         }, 1000)
 
     };
     var self = this;
