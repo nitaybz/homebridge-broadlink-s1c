@@ -183,22 +183,22 @@ BroadlinkHost.prototype = {
 
                 switch (state) {
                     case Characteristic.SecuritySystemTargetState.STAY_ARM:
-                        dev.set_state("disarm", false, true);
+                        dev.set_state("disarm", false, false);
                         self.log("Setting State to Cancel Alarm")
                         self.alarmStatus = 0;
                         break;
                     case Characteristic.SecuritySystemTargetState.AWAY_ARM:
-                        dev.set_state("full_Arm", false, true);
+                        dev.set_state("full_Arm", false, false);
                         self.log("Setting State to Full-Arm")
                         self.alarmStatus = 1;
                         break;
                     case Characteristic.SecuritySystemTargetState.NIGHT_ARM:
-                        dev.set_state("part_arm", false, true);
+                        dev.set_state("part_arm", false, false);
                         self.log("Setting State to Part-Arm")
                         self.alarmStatus = 2;
                         break;
                     case Characteristic.SecuritySystemTargetState.DISARM:
-                        dev.set_state("disarm", false, true);
+                        dev.set_state("disarm", false, false);
                         self.log("Setting State to Cancel Alarm")
                         self.alarmStatus = 3;
                         break;
