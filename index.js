@@ -186,7 +186,7 @@ BroadlinkHost.prototype = {
                         self.alarmStatus = 0;
                         break;
                     case Characteristic.SecuritySystemTargetState.AWAY_ARM:
-                        dev.set_state("full_Arm", false, false);
+                        dev.set_state("full_arm", false, false);
                         self.log("Setting State to Full-Arm")
                         self.alarmStatus = 1;
                         break;
