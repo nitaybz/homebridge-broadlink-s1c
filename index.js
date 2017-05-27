@@ -47,6 +47,12 @@ broadlinkS1C.prototype = {
                             this.log('Created ' + foundSensor.accessoryName + "  - " + foundSensor.type +' Named: ' + foundSensor.sensorName);
                         }
                     }
+                    var hostConfig = {};
+                    hostConfig.name = this.name
+                    hostConfig.ip = this.ip;
+                    hostConfig.mac = this.mac;
+                    var hostAccessory = new BroadlinkHost(this.log, hostConfig);
+                    myAccessories.push(hostAccessory);
                     callback(myAccessories);
                 });
             } else {
@@ -58,6 +64,155 @@ broadlinkS1C.prototype = {
             b.discover();
         }, 1000);
         
+    }
+}
+function BroadlinkHost(log, config) {
+    this.log = log;
+    this.config = config;
+    this.serial = config.serial || "";
+    this.type = config.type;
+    this.name = config.sensorName;
+    this.ip = config.ip;
+    this.mac = config.mac;
+    this.alarmStatus = 3;
+    if (!this.ip && !this.mac) throw new Error("You must provide a config value for 'ip' or 'mac'.");
+    // MAC string to MAC buffer
+    this.mac_buff = function(mac) {
+        var mb = new Buffer(6);
+        if (mac) {
+            var values = mac.split(':');
+            if (!values || values.length !== 6) {
+                throw new Error('Invalid MAC [' + mac + ']; should follow pattern ##:##:##:##:##:##');
+            }
+            for (var i = 0; i < values.length; ++i) {
+                var tmpByte = parseInt(values[i], 16);
+                mb.writeUInt8(tmpByte, i);
+            }
+        } else {
+            //this.log("MAC address emtpy, using IP: " + this.ip);
+        }
+        return mb;
+    }
+
+    this.securityService = new Service.SecuritySystem(this.name);
+
+    this.securityService
+        .getCharacteristic(Characteristic.SecuritySystemCurrentState)
+        .on('get', this.getState.bind(this));
+
+    this.securityService
+        .getCharacteristic(Characteristic.SecuritySystemTargetState)
+        .on('get', this.getState.bind(this))
+        .on('set', this.setTargetState.bind(this));
+
+    this.statusCheck = function(){
+        var self = this;
+        var b = new broadlink();
+        b.discover();
+
+        b.on("deviceReady", (dev) => {
+            if (self.mac_buff(self.mac).equals(dev.mac) || dev.host.address == self.ip) {
+                dev.get_alarm_status();
+                dev.on("alarm_status", (status) => {
+                    var lastStatus = self.alarmStatus;
+                    switch (status) {
+                        case "Full-Arm":
+                            self.alarmStatus = 1;
+                            break;
+                        case "Part-Arm":
+                            self.alarmStatus = 2;
+                            break;
+                        case "Cancel Alarm":
+                            self.alarmStatus = 3;
+                            break;
+                        default:
+                            status = null;
+                            break;
+                    };
+                    dev.get_trigger_status();
+                    dev.on("triggerd_status", (triggered) => {
+                        if (triggered){
+                            self.alarmStatus = 4;
+                            self.log("Alarm is Triggered")
+                        }
+                        dev.exit();
+                        if (lastStatus !== self.alarmStatus) {
+                            console.log("State Changed to " + self.alarmStatus);
+                            self.securityService.getCharacteristic(Characteristic.SecuritySystemCurrentState, self.alarmStatus);
+                        }
+                    });
+                });
+                
+            } else {
+                dev.exit();
+            }
+        });
+    };
+    
+    var self = this;
+    self.statusCheck();
+    this.timer = setInterval(function(){
+        self.statusCheck();
+    }, 3000);
+
+}
+
+BroadlinkHost.prototype = {
+    getServices: function() {
+        var informationService = new Service.AccessoryInformation();
+        informationService
+            .setCharacteristic(Characteristic.Manufacturer, 'Broadlink SmartOne')
+            .setCharacteristic(Characteristic.Model, "S1C")
+            .setCharacteristic(Characteristic.SerialNumber, "Host");
+        
+        return [this.securityService, informationService];
+    },
+
+    getState: function(callback) {
+		callback(null, this.alarmStatus);
+    },
+
+    setTargetState: function (callback){
+        var self = this;
+        var b = new broadlink();
+        b.discover();
+
+        b.on("deviceReady", (dev) => {
+            if (self.mac_buff(self.mac).equals(dev.mac) || dev.host.address == self.ip) {
+                clearInterval(checkAgain);
+
+                switch (state) {
+                    case Characteristic.SecuritySystemTargetState.STAY_ARM:
+                        dev.set_state("disarm", false, true);
+                        self.log("Setting State to Cancel Alarm")
+                        self.alarmStatus = 0;
+                        break;
+                    case Characteristic.SecuritySystemTargetState.AWAY_ARM:
+                        dev.set_state("full_Arm", false, true);
+                        self.log("Setting State to Full-Arm")
+                        self.alarmStatus = 1;
+                        break;
+                    case Characteristic.SecuritySystemTargetState.NIGHT_ARM:
+                        dev.set_state("part_arm", false, true);
+                        self.log("Setting State to Part-Arm")
+                        self.alarmStatus = 2;
+                        break;
+                    case Characteristic.SecuritySystemTargetState.DISARM:
+                        dev.set_state("disarm", false, true);
+                        self.log("Setting State to Cancel Alarm")
+                        self.alarmStatus = 3;
+                        break;
+                };
+                dev.exit();
+                self.securityService.setCharacteristic(Characteristic.SecuritySystemCurrentState, state);
+                callback(null, state);
+            } else {
+                dev.exit();
+            }
+        });
+        var checkAgain = setInterval(function() {
+            b.discover();
+        }, 1000)
     }
 }
 
@@ -112,7 +267,7 @@ function BroadlinkSensor(log, config) {
                     var sensors = status_array["sensors"];
                     var count = status_array["count"];
                     dev.exit();
-                    //clearInterval(checkAgain);
+                    
                     for (var i=0; i<count; i++){
                         if (self.serial == sensors[i].serial){
                             lastDetected = self.detected;
@@ -132,9 +287,7 @@ function BroadlinkSensor(log, config) {
                 dev.exit();
             }
         });
-//         var checkAgain = setInterval(function() {
-//             b.discover();
-//         }, 1000)
+
 
     };
     var self = this;
