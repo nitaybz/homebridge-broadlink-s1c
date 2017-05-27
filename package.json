@@ -26,7 +26,7 @@
   "author": "nitaybz",
   "license": "MIT",
   "dependencies": {
-    "broadlinkjs-s1c": "nitaybz/broadlinkjs-s1c"
+    "broadlinkjs-s1c": "nitaybz/broadlinkjs-s1c#dev"
   },
   "bugs": {
     "url": "https://github.com/nitaybz/homebridge-broadlink-s1c/issues"
