@@ -128,7 +128,7 @@ function BroadlinkHost(log, config) {
                     dev.on("triggerd_status", (triggered) => {
                         dev.exit();
                         if (triggered){
-                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED;
+                            self.alarmStatus = 4;
                             self.log("Alarm is Triggered")
                         }
                         if (lastStatus !== self.alarmStatus) {
