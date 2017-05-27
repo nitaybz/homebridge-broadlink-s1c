@@ -123,17 +123,14 @@ function BroadlinkHost(log, config) {
                         case "Cancel Alarm":
                             self.alarmStatus = 3;
                             break;
-                        default:
-                            status = null;
-                            break;
                     };
                     dev.get_trigger_status();
                     dev.on("triggerd_status", (triggered) => {
+                        dev.exit();
                         if (triggered){
-                            self.alarmStatus = 4;
+                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED;
                             self.log("Alarm is Triggered")
                         }
-                        dev.exit();
                         if (lastStatus !== self.alarmStatus) {
                             console.log("State Changed to " + self.alarmStatus);
                             self.securityService.getCharacteristic(Characteristic.SecuritySystemCurrentState, self.alarmStatus);
