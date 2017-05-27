@@ -96,11 +96,11 @@ function BroadlinkHost(log, config) {
 
     this.securityService
         .getCharacteristic(Characteristic.SecuritySystemCurrentState)
-        .on('get', this.getState.bind(this));
+        .on('get', this.getCurrentState.bind(this));
 
     this.securityService
         .getCharacteristic(Characteristic.SecuritySystemTargetState)
-        .on('get', this.getState.bind(this))
+        .on('get', this.getTargetState.bind(this))
         .on('set', this.setTargetState.bind(this));
 
     this.statusCheck = function(){
@@ -149,7 +149,7 @@ function BroadlinkHost(log, config) {
     
     var self = this;
     self.statusCheck();
-    this.timer = setInterval(function(){
+    self.timer = setInterval(function(){
         self.statusCheck();
     }, 3000);
 
@@ -169,7 +169,17 @@ BroadlinkHost.prototype = {
     getState: function(callback) {
 		callback(null, this.alarmStatus);
     },
+    
+    getCurrentState: function(callback) {
+        this.log("Getting current state");
+        this.getState(callback);
+    },
 
+    getTargetState: function(callback) {
+        this.log("Getting target state");
+        this.getState(callback);
+    },
+    
     setTargetState: function (state, callback){
         var self = this;
         var b = new broadlink();
