@@ -69,9 +69,7 @@ broadlinkS1C.prototype = {
 function BroadlinkHost(log, config) {
     this.log = log;
     this.config = config;
-    this.serial = config.serial || "";
-    this.type = config.type;
-    this.name = config.sensorName;
+    this.name = config.name;
     this.ip = config.ip;
     this.mac = config.mac;
     this.alarmStatus = 3;
