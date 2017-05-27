@@ -170,7 +170,7 @@ BroadlinkHost.prototype = {
 		callback(null, this.alarmStatus);
     },
 
-    setTargetState: function (callback){
+    setTargetState: function (state, callback){
         var self = this;
         var b = new broadlink();
         b.discover();
