@@ -14,8 +14,26 @@ function broadlinkS1C(log, config, api) {
     this.name = config.name;
     this.ip = config.ip;
     this.mac = config.mac;
+    
     if (api) {
         this.api = api;
+    }
+
+    this.mac_buff = function(mac) {
+        var mb = new Buffer(6);
+        if (mac) {
+            var values = mac.split(':');
+            if (!values || values.length !== 6) {
+                throw new Error('Invalid MAC [' + mac + ']; should follow pattern ##:##:##:##:##:##');
+            }
+            for (var i = 0; i < values.length; ++i) {
+                var tmpByte = parseInt(values[i], 16);
+                mb.writeUInt8(tmpByte, i);
+            }
+        } else {
+            //this.log("MAC address emtpy, using IP: " + this.ip);
+        }
+        return mb;
     }
 
 }
@@ -26,7 +44,7 @@ broadlinkS1C.prototype = {
         var myAccessories = [];
         var b = new broadlink();
         b.on("deviceReady", (dev) => {
-            if (dev.type == "S1C") {
+            if (dev.type == "S1C" && (this.mac_buff(this.mac).equals(dev.mac) || dev.host.address == this.ip)) {
                 this.log("S1C Detected");
                 dev.get_sensors_status();
                 dev.on("sensors_status", (status_array) => {
@@ -51,6 +69,11 @@ broadlinkS1C.prototype = {
                     hostConfig.name = this.name
                     hostConfig.ip = this.ip;
                     hostConfig.mac = this.mac;
+                    hostConfig.nightMode = this.config.nightMode || "part_arm";
+                    hostConfig.awayMode = this.config.awayMode || "full-arm";
+                    hostConfig.stayMode = this.config.stayMode || "disarm";
+                    hostConfig.alarmSound = this.config.alarmSound || true;
+                    hostConfig.notificationSound = this.config.notificationSound || false;
                     var hostAccessory = new BroadlinkHost(this.log, hostConfig);
                     myAccessories.push(hostAccessory);
                     callback(myAccessories);
@@ -73,6 +96,11 @@ function BroadlinkHost(log, config) {
     this.ip = config.ip;
     this.mac = config.mac;
     this.alarmStatus = 3;
+    this.nightMode = config.nightMode || "part_arm";
+    this.awayMode = config.awayMode || "full-arm";
+    this.stayMode = config.stayMode || "disarm";
+    this.alarmSound = config.alarmSound || true;
+    this.notificationSound = config.notificationSound || false;
     if (!this.ip && !this.mac) throw new Error("You must provide a config value for 'ip' or 'mac'.");
     // MAC string to MAC buffer
     this.mac_buff = function(mac) {
@@ -116,9 +144,8 @@ function BroadlinkHost(log, config) {
                             dev.exit();
                             if (self.alarmStatus !== 4){
                                 self.alarmStatus = 4;
-                                self.securityService.getCharacteristic(Characteristic.SecuritySystemAlarmType).setValue(1);  
                                 self.securityService.getCharacteristic(Characteristic.SecuritySystemCurrentState).setValue(self.alarmStatus);
-                                self.log("Alarm is Triggered!!")
+                                self.log("Alarm is Triggered!!");
                             }   
                         } else {
                             dev.get_alarm_status();
@@ -127,10 +154,22 @@ function BroadlinkHost(log, config) {
                                 var lastStatus = self.alarmStatus;
                                 switch (status) {
                                     case "Full-Arm":
-                                        self.alarmStatus = 1;
+                                        if (self.nightMode == "full_arm"){
+                                            self.alarmStatus = 2;
+                                        } else if (self.stayMode == "full_arm"){
+                                            self.alarmStatus = 0;
+                                        } else if (self.awayMode == "full_arm"){
+                                            self.alarmStatus = 1;
+                                        }
                                         break;
                                     case "Part-Arm":
-                                        self.alarmStatus = 2;
+                                        if (self.nightMode == "part_arm"){
+                                            self.alarmStatus = 2;
+                                        } else if (self.stayMode == "part_arm"){
+                                            self.alarmStatus = 0;
+                                        } else if (self.awayMode == "part_arm"){
+                                            self.alarmStatus = 1;
+                                        }
                                         break;
                                     case "Cancel Alarm":
                                         self.alarmStatus = 3;
@@ -138,7 +177,7 @@ function BroadlinkHost(log, config) {
                                 };
                                 
                                 if (lastStatus !== self.alarmStatus) {
-                                    self.log("State Changed to " + self.alarmStatus);
+                                    this.log("State Changed to " + self.alarmStatus);
                                     self.securityService.getCharacteristic(Characteristic.SecuritySystemCurrentState).setValue(self.alarmStatus);
                                     self.securityService.getCharacteristic(Characteristic.SecuritySystemTargetState).setValue(self.alarmStatus);
                                 }       
@@ -175,18 +214,27 @@ BroadlinkHost.prototype = {
 	this.log("Identify requested!");
 	callback(); // success
     },
-    getState: function(callback) {
-		callback(null, this.alarmStatus);
+
+    getState: function(callback, command) {
+		if (command == "current"){
+            callback(null, this.alarmStatus);
+        } else if (command == "target"){
+            if (this.alarmStatus == 4){
+                callback(null);
+            }else {
+                callback(null, this.alarmStatus);
+            }
+        }
     },
     
     getCurrentState: function(callback) {
         this.log("Getting current state");
-        this.getState(callback);
+        this.getState(callback, "current");
     },
 
     getTargetState: function(callback) {
         this.log("Getting target state");
-        this.getState(callback);
+        this.getState(callback, "target");
     },
     
     setTargetState: function (state, callback){
@@ -200,23 +248,23 @@ BroadlinkHost.prototype = {
 
                 switch (state) {
                     case Characteristic.SecuritySystemTargetState.STAY_ARM:
-                        dev.set_state("disarm", false, false);
-                        self.log("Setting State to Cancel Alarm")
+                        dev.set_state(self.stayMode, self.notificationSound, self.alarmSound);
+                        self.log("Setting State to " + self.stayMode)
                         self.alarmStatus = 0;
                         break;
                     case Characteristic.SecuritySystemTargetState.AWAY_ARM:
-                        dev.set_state("full_arm", false, false);
-                        self.log("Setting State to Full-Arm")
+                        dev.set_state(self.awayMode, self.notificationSound, self.alarmSound);
+                        self.log("Setting State to " + self.awayMode)
                         self.alarmStatus = 1;
                         break;
                     case Characteristic.SecuritySystemTargetState.NIGHT_ARM:
-                        dev.set_state("part_arm", false, false);
-                        self.log("Setting State to Part-Arm")
+                        dev.set_state(self.nightMode, self.notificationSound, self.alarmSound);
+                        self.log("Setting State to " + self.nightMode)
                         self.alarmStatus = 2;
                         break;
                     case Characteristic.SecuritySystemTargetState.DISARM:
-                        dev.set_state("disarm", false, false);
-                        self.log("Setting State to Cancel Alarm")
+                        dev.set_state("disarm", self.notificationSound, self.alarmSound);
+                        self.log("Setting State to Cancel Alarm (Disarm")
                         self.alarmStatus = 3;
                         break;
                 };
