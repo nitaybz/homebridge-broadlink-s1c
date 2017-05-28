@@ -1,20 +1,24 @@
 {
     "bridge": {
         "name": "Homebridge",
-        "username": "CD:21:3D:E3:CE:38",
+        "username": "CW:22:3D:E3:CE:30",
         "port": 51826,
         "pin": "031-45-154"
     },
 
-    "description": "This is an example configuration for the Broadlink MP homebridge plugin",
+    "description": "This is an example configuration file with one fake accessory and one fake platform. You can use this as a template for creating your own configuration file containing devices you actually own.",
+    "platforms": [
+        {
+            "platform": "broadlinkS1C",
+            "name": "S1C",
+            "ip": "10.0.0.x",
+            "stayMode": "disarm",
+            "awayMode": "full_arm",
+            "nightMode": "part_arm",
+            "alarmSound": true,
+            "notificationSound": false
+        }
+    ],
 
-    "platforms": [{
-        "platform": "broadlinkS1C",
-        "accessories": [
-            {
-                "name": "S1C",
-                "ip": "192.168.1.92"
-            }
-        ]
-    }]
+    "accessories": [    ]
 }

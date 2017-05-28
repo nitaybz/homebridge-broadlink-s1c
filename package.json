@@ -1,6 +1,6 @@
 {
   "name": "homebridge-broadlink-s1c",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Homebridge plugin for Broadlink S1C - SmartOne Alarm Kit",
   "main": "index.js",
   "scripts": {
