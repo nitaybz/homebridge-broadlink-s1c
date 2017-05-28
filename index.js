@@ -138,7 +138,7 @@ function BroadlinkHost(log, config) {
                                 };
                                 
                                 if (lastStatus !== self.alarmStatus) {
-                                    console.log("State Changed to " + self.alarmStatus);
+                                    self.log("State Changed to " + self.alarmStatus);
                                     self.securityService.getCharacteristic(Characteristic.SecuritySystemCurrentState).setValue(self.alarmStatus);
                                     self.securityService.getCharacteristic(Characteristic.SecuritySystemTargetState).setValue(self.alarmStatus);
                                 }       
