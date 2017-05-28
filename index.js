@@ -133,7 +133,7 @@ function BroadlinkHost(log, config) {
                         }
                         if (lastStatus !== self.alarmStatus) {
                             console.log("State Changed to " + self.alarmStatus);
-                            self.securityService.getCharacteristic(Characteristic.SecuritySystemCurrentState, self.alarmStatus);
+			    self.securityService.getCharacteristic(Characteristic.SecuritySystemCurrentState).setValue(self.alarmStatus)
                         }
                     });
                 });
@@ -162,7 +162,10 @@ BroadlinkHost.prototype = {
         
         return [this.securityService, informationService];
     },
-
+    identify: function(callback) {
+	this.log("Identify requested!");
+	callback(); // success
+    },
     getState: function(callback) {
 		callback(null, this.alarmStatus);
     },
