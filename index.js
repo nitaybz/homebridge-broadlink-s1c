@@ -102,7 +102,7 @@ function BroadlinkHost(log, config) {
         .getCharacteristic(Characteristic.SecuritySystemTargetState)
         .on('get', this.getTargetState.bind(this))
         .on('set', this.setTargetState.bind(this));
-
+        
     this.statusCheck = function(){
         var self = this;
         var b = new broadlink();
@@ -110,33 +110,41 @@ function BroadlinkHost(log, config) {
 
         b.on("deviceReady", (dev) => {
             if (self.mac_buff(self.mac).equals(dev.mac) || dev.host.address == self.ip) {
-                dev.get_alarm_status();
-                dev.on("alarm_status", (status) => {
-                    var lastStatus = self.alarmStatus;
-                    switch (status) {
-                        case "Full-Arm":
-                            self.alarmStatus = 1;
-                            break;
-                        case "Part-Arm":
-                            self.alarmStatus = 2;
-                            break;
-                        case "Cancel Alarm":
-                            self.alarmStatus = 3;
-                            break;
-                    };
-                    dev.get_trigger_status();
-                    dev.on("triggerd_status", (triggered) => {
-                        dev.exit();
+		        dev.get_trigger_status();
+                dev.on("triggerd_status", (triggered) => {
                         if (triggered){
-                            self.alarmStatus = 4;
-                            self.log("Alarm is Triggered")
+                            dev.exit();
+                            if (self.alarmStatus !== 4){
+                                self.alarmStatus = 4;
+                                self.securityService.getCharacteristic(Characteristic.SecuritySystemAlarmType).setValue(1);  
+                                self.securityService.getCharacteristic(Characteristic.SecuritySystemCurrentState).setValue(self.alarmStatus);
+                                self.log("Alarm is Triggered!!")
+                            }   
+                        } else {
+                            dev.get_alarm_status();
+                            dev.on("alarm_status", (status) => {
+                                dev.exit();
+                                var lastStatus = self.alarmStatus;
+                                switch (status) {
+                                    case "Full-Arm":
+                                        self.alarmStatus = 1;
+                                        break;
+                                    case "Part-Arm":
+                                        self.alarmStatus = 2;
+                                        break;
+                                    case "Cancel Alarm":
+                                        self.alarmStatus = 3;
+                                        break;
+                                };
+                                
+                                if (lastStatus !== self.alarmStatus) {
+                                    console.log("State Changed to " + self.alarmStatus);
+                                    self.securityService.getCharacteristic(Characteristic.SecuritySystemCurrentState).setValue(self.alarmStatus);
+                                    self.securityService.getCharacteristic(Characteristic.SecuritySystemTargetState).setValue(self.alarmStatus);
+                                }       
+                            });
                         }
-                        if (lastStatus !== self.alarmStatus) {
-                            console.log("State Changed to " + self.alarmStatus);
-			    self.securityService.getCharacteristic(Characteristic.SecuritySystemCurrentState).setValue(self.alarmStatus);
-                            self.securityService.getCharacteristic(Characteristic.SecuritySystemTargetState).setValue(self.alarmStatus);
-			}
-                    });
+                    
                 });
                 
             } else {
