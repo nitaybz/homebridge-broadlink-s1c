@@ -95,7 +95,7 @@ function BroadlinkHost(log, config) {
     this.name = config.name;
     this.ip = config.ip;
     this.mac = config.mac;
-    this.alarmStatus = 3;
+    this.alarmStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
     this.nightMode = config.nightMode || "part_arm";
     this.awayMode = config.awayMode || "full-arm";
     this.stayMode = config.stayMode || "disarm";
@@ -142,8 +142,8 @@ function BroadlinkHost(log, config) {
                 dev.on("triggerd_status", (triggered) => {
                         if (triggered){
                             dev.exit();
-                            if (self.alarmStatus !== 4){
-                                self.alarmStatus = 4;
+                            if (self.alarmStatus !== Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED){
+                                self.alarmStatus = Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED;
                                 self.securityService.getCharacteristic(Characteristic.SecuritySystemCurrentState).setValue(self.alarmStatus);
                                 self.log("Alarm is Triggered!!");
                             }   
@@ -155,24 +155,24 @@ function BroadlinkHost(log, config) {
                                 switch (status) {
                                     case "Full-Arm":
                                         if (self.nightMode == "full_arm"){
-                                            self.alarmStatus = 2;
+                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
                                         } else if (self.stayMode == "full_arm"){
-                                            self.alarmStatus = 0;
+                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
                                         } else if (self.awayMode == "full_arm"){
-                                            self.alarmStatus = 1;
+                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
                                         }
                                         break;
                                     case "Part-Arm":
                                         if (self.nightMode == "part_arm"){
-                                            self.alarmStatus = 2;
+                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
                                         } else if (self.stayMode == "part_arm"){
-                                            self.alarmStatus = 0;
+                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
                                         } else if (self.awayMode == "part_arm"){
-                                            self.alarmStatus = 1;
+                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
                                         }
                                         break;
                                     case "Cancel Alarm":
-                                        self.alarmStatus = 3;
+                                        self.alarmStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
                                         break;
                                 };
                                 
@@ -206,7 +206,6 @@ BroadlinkHost.prototype = {
         informationService
             .setCharacteristic(Characteristic.Manufacturer, 'Broadlink SmartOne')
             .setCharacteristic(Characteristic.Model, "S1C")
-            .setCharacteristic(Characteristic.SerialNumber, "Host");
         
         return [this.securityService, informationService];
     },
@@ -216,10 +215,10 @@ BroadlinkHost.prototype = {
     },
 
     getState: function(callback, command) {
-		if (command == "current"){
+	if (command == "current"){
             callback(null, this.alarmStatus);
         } else if (command == "target"){
-            if (this.alarmStatus == 4){
+            if (this.alarmStatus == Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED){
                 callback(null);
             }else {
                 callback(null, this.alarmStatus);
@@ -250,22 +249,22 @@ BroadlinkHost.prototype = {
                     case Characteristic.SecuritySystemTargetState.STAY_ARM:
                         dev.set_state(self.stayMode, self.notificationSound, self.alarmSound);
                         self.log("Setting State to " + self.stayMode)
-                        self.alarmStatus = 0;
+                        self.alarmStatus = Characteristic.SecuritySystemTargetState.STAY_ARM;
                         break;
                     case Characteristic.SecuritySystemTargetState.AWAY_ARM:
                         dev.set_state(self.awayMode, self.notificationSound, self.alarmSound);
                         self.log("Setting State to " + self.awayMode)
-                        self.alarmStatus = 1;
+                        self.alarmStatus = Characteristic.SecuritySystemTargetState.AWAY_ARM;
                         break;
                     case Characteristic.SecuritySystemTargetState.NIGHT_ARM:
                         dev.set_state(self.nightMode, self.notificationSound, self.alarmSound);
                         self.log("Setting State to " + self.nightMode)
-                        self.alarmStatus = 2;
+                        self.alarmStatus = Characteristic.SecuritySystemTargetState.NIGHT_ARM;
                         break;
                     case Characteristic.SecuritySystemTargetState.DISARM:
                         dev.set_state("disarm", self.notificationSound, self.alarmSound);
-                        self.log("Setting State to Cancel Alarm (Disarm")
-                        self.alarmStatus = 3;
+                        self.log("Setting State to Cancel Alarm (Disarm)")
+                        self.alarmStatus = Characteristic.SecuritySystemTargetState.DISARM;
                         break;
                 };
                 dev.exit();
