@@ -62,7 +62,7 @@ broadlinkS1C.prototype = {
                             foundSensor.mac = this.mac;
                             var accessory = new BroadlinkSensor(this.log, foundSensor);
                             myAccessories.push(accessory);
-                            this.log('Created ' + foundSensor.accessoryName + "  - " + foundSensor.type +' Named: ' + foundSensor.sensorName);
+                            this.log('Created ' + this.name + "  - " + foundSensor.type +' Named: ' + foundSensor.sensorName);
                         }
                     }
                     var hostConfig = {};
