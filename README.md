@@ -26,7 +26,8 @@ Inspired and forked from [homebridge-broadlink-platform](https://github.com/smka
         "awayMode": "full_arm",
         "nightMode": "part_arm",
         "alarmSound": true,
-        "notificationSound": false
+        "notificationSound": false,
+        "motionTimeout": 30
     }
 ],
 ```
@@ -44,3 +45,6 @@ Inspired and forked from [homebridge-broadlink-platform](https://github.com/smka
 | `nightMode`                      | "disarm" / "full_arm" / "part_arm"  On HomeKit Night          |          | "part_arm"|
 | `alarmSound`                     | true / false - set the alarm sound when triggered             |          |   true    |
 | `useFanSpeed`                    | true / false - set the beep sound on sensors notification     |          |   false   |
+| `motionTimeout`                  | Time in seconds of which motion sensor can be retriggered**   |          |    30     |
+
+\*\* any vaue for the motionTimeout less than 30 seconds will be retriggered always since it's the minimum delay than can be set in the broadlink app, most recommeneded to set it for 30s delay instead of the default 6 minutes.
