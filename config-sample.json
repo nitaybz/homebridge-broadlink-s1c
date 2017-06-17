@@ -16,7 +16,8 @@
             "awayMode": "full_arm",
             "nightMode": "part_arm",
             "alarmSound": true,
-            "notificationSound": false
+            "notificationSound": false,
+            "motionTimeout": 30
         }
     ],
 
