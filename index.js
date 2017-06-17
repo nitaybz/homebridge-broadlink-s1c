@@ -14,7 +14,7 @@ function broadlinkS1C(log, config, api) {
     this.name = config.name;
     this.ip = config.ip;
     this.mac = config.mac;
-    
+    this.motionTimeout = config.motionTimeout || 30;
     if (api) {
         this.api = api;
     }
@@ -60,6 +60,7 @@ broadlinkS1C.prototype = {
                             foundSensor.type = sensors[i].type;
                             foundSensor.ip = this.ip;
                             foundSensor.mac = this.mac;
+                            foundSensor.motionTimeout = this.motionTimeout
                             var accessory = new BroadlinkSensor(this.log, foundSensor);
                             myAccessories.push(accessory);
                             this.log('Created ' + this.name + "  - " + foundSensor.type +' Named: ' + foundSensor.sensorName);
@@ -289,6 +290,8 @@ function BroadlinkSensor(log, config) {
     this.ip = config.ip;
     this.mac = config.mac;
     this.detected = false;
+    this.motionTimeout = config.motionTimeout;
+
     if (!this.ip && !this.mac) throw new Error("You must provide a config value for 'ip' or 'mac'.");
     var lastDetected;
     // MAC string to MAC buffer
@@ -339,6 +342,13 @@ function BroadlinkSensor(log, config) {
                             if (sensors[i].type == "Motion Sensor" && self.detected !== lastDetected) {
                                 self.log(self.name + " state is - " + (self.detected ? "Person Detected" : "No Person"));
                                 self.service.getCharacteristic(Characteristic.MotionDetected).setValue(self.detected, undefined);
+                                clearInterval(this.timer);
+                                setTimeout(function(){
+                                    self.detected = false;
+                                    this.timer = setInterval(function(){
+                                        self.intervalCheck();
+                                    }, 2000); 
+                                }, self.motionTimeout)
                             } else if (sensors[i].type == "Door Sensor" && self.detected !== lastDetected) {
                                 self.log(self.name + " state is - " + (self.detected ? "Open" : "Close"));
                                 self.service.getCharacteristic(Characteristic.ContactSensorState).setValue(sensors[i].status == 1 ?
