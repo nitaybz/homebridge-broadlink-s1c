@@ -348,7 +348,7 @@ function BroadlinkSensor(log, config) {
                                     this.timer = setInterval(function(){
                                         self.intervalCheck();
                                     }, 2000); 
-                                }, self.motionTimeout)
+                                }, self.motionTimeout*1000)
                             } else if (sensors[i].type == "Door Sensor" && self.detected !== lastDetected) {
                                 self.log(self.name + " state is - " + (self.detected ? "Open" : "Close"));
                                 self.service.getCharacteristic(Characteristic.ContactSensorState).setValue(sensors[i].status == 1 ?
