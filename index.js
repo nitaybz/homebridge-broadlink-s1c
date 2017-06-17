@@ -345,6 +345,7 @@ function BroadlinkSensor(log, config) {
                                 clearInterval(this.timer);
                                 setTimeout(function(){
                                     self.detected = false;
+                                    self.service.getCharacteristic(Characteristic.MotionDetected).setValue(self.detected, undefined);
                                     this.timer = setInterval(function(){
                                         self.intervalCheck();
                                     }, 2000); 
