@@ -43,26 +43,26 @@ function broadlinkS1C(log, config, api) {
         return mb;
     }
 
-    var checkAllInterval = function(){
+    this.checkAllInterval = function(){
         var self = this;
         var b = new broadlink();
         b.discover();
         b.on("deviceReady", (dev) => {
-            if (this.mac_buff(this.mac).equals(dev.mac) || dev.host.address == this.ip) {
+            if (self.mac_buff(self.mac).equals(dev.mac) || dev.host.address == self.ip) {
                 async.waterfall([
                     function(callback){
                         dev.get_sensors_status();
                         dev.on("sensors_status", (status_array) => {
-                            this.sensors = status_array["sensors"];
-                            this.count = status_array["count"];
+                            self.sensors = status_array["sensors"];
+                            self.count = status_array["count"];
                             callback (null)
                         });
                     }, 
                     function(callback){
                         dev.get_trigger_status();
                         dev.on("triggerd_status", (triggered) => {
-                                this.triggered = triggered;
-                                callback (null, this.triggered)
+                                self.triggered = triggered;
+                                callback (null, self.triggered)
                         });
                     }, 
                     function(triggered, callback){
@@ -71,25 +71,25 @@ function broadlinkS1C(log, config, api) {
                             dev.on("alarm_status", (status) => {
                                 switch (status) {
                                     case "Full-Arm":
-                                        if (this.nightMode == "full_arm"){
-                                            this.alarmStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
-                                        } else if (this.stayMode == "full_arm"){
-                                            this.alarmStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
-                                        } else if (this.awayMode == "full_arm"){
-                                            this.alarmStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
+                                        if (self.nightMode == "full_arm"){
+                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
+                                        } else if (self.stayMode == "full_arm"){
+                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
+                                        } else if (self.awayMode == "full_arm"){
+                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
                                         }
                                         break;
                                     case "Part-Arm":
-                                        if (this.nightMode == "part_arm"){
-                                            this.alarmStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
-                                        } else if (this.stayMode == "part_arm"){
-                                            this.alarmStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
-                                        } else if (this.awayMode == "part_arm"){
-                                            this.alarmStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
+                                        if (self.nightMode == "part_arm"){
+                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
+                                        } else if (self.stayMode == "part_arm"){
+                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
+                                        } else if (self.awayMode == "part_arm"){
+                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
                                         }
                                         break;
                                     case "Cancel Alarm":
-                                        this.alarmStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
+                                        self.alarmStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
                                         break;
                                 };
                                 callback (null, "done")      
@@ -101,7 +101,7 @@ function broadlinkS1C(log, config, api) {
                     }
                 ], function (err, result){
                         if (result !== "done") {
-                            this.log(err)
+                            self.log(err)
                         }
                         dev.exit();
                     }
@@ -112,7 +112,7 @@ function broadlinkS1C(log, config, api) {
         });
     }
     this.refreshAll = setInterval(function(){
-        checkAllInterval();
+        this.checkAllInterval();
     }, 2000);
 
 }
