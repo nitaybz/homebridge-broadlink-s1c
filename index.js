@@ -379,7 +379,7 @@ function BroadlinkSensor(log, config, platform) {
                     }, self.motionTimeout*1000)
                 } else if (self.type == "Door Sensor" && self.detected !== lastDetected) {
                     self.log(self.name + " state is - " + (self.detected ? "Open" : "Close"));
-                    self.service.getCharacteristic(Characteristic.ContactSensorState).setValue(sensors[i].status == 1 ?
+                    self.service.getCharacteristic(Characteristic.ContactSensorState).setValue(platform.sensors[i].status == 1 ?
                         Characteristic.ContactSensorState.CONTACT_NOT_DETECTED : Characteristic.ContactSensorState.CONTACT_DETECTED);
                 }
             }
