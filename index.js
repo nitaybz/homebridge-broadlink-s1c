@@ -19,7 +19,6 @@ function broadlinkS1C(log, config, api) {
     this.nightMode = config.nightMode || "part_arm";
     this.awayMode = config.awayMode || "full_arm";
     this.stayMode = config.stayMode || "disarm";
-    this.triggered = false;
     this.alarmStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
 
     if (api) {
@@ -152,6 +151,9 @@ broadlinkS1C.prototype = {
                     hostConfig.mac = this.mac;
                     hostConfig.alarmSound = this.config.alarmSound || true;
                     hostConfig.notificationSound = this.config.notificationSound || false;
+                    hostConfig.nightMode = this.nightMode;
+                    hostConfig.awayMode = this.awayMode;
+                    hostConfig.stayMode = this.stayMode;
                     var hostAccessory = new BroadlinkHost(this.log, hostConfig, this);
                     myAccessories.push(hostAccessory);
                     callback(myAccessories);
@@ -174,9 +176,9 @@ function BroadlinkHost(log, config, platform) {
     this.ip = config.ip;
     this.mac = config.mac;
     this.platform = platform
-    this.nightMode = config.nightMode || "part_arm";
-    this.awayMode = config.awayMode || "full_arm";
-    this.stayMode = config.stayMode || "disarm";
+    this.nightMode = config.nightMode;
+    this.awayMode = config.awayMode;
+    this.stayMode = config.stayMode;
     this.lastReportedStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
     this.alarmSound = config.alarmSound || true;
     this.notificationSound = config.notificationSound || false;
