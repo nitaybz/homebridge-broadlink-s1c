@@ -269,8 +269,9 @@ BroadlinkHost.prototype = {
         var self = this;
         var b = new broadlink();
         b.discover();
-
+        self.log("Setting State")
         b.on("deviceReady", (dev) => {
+            self.log("Setting State - device is ready")
             if (self.mac_buff(self.mac).equals(dev.mac) || dev.host.address == self.ip) {
                 clearInterval(checkAgain);
 
