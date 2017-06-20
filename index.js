@@ -176,7 +176,7 @@ function BroadlinkHost(log, config, platform) {
     this.nightMode = config.nightMode || "part_arm";
     this.awayMode = config.awayMode || "full-arm";
     this.stayMode = config.stayMode || "disarm";
-    //this.lastReportedStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
+    this.lastReportedStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
     this.alarmSound = config.alarmSound || true;
     this.notificationSound = config.notificationSound || false;
     if (!this.ip && !this.mac) throw new Error("You must provide a config value for 'ip' or 'mac'.");
@@ -242,27 +242,27 @@ BroadlinkHost.prototype = {
 	callback(); // success
     },
 
-    getState: function(command, callback) {
+    getState: function(callback, command) {
     var self = this;
 	if (command == "current"){
-        callback(null, self.lastReportedStatus);
-    } else if (command == "target"){
-        if (self.lastReportedStatus == Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED){
-            callback(null);
-        }else {
             callback(null, self.lastReportedStatus);
+        } else if (command == "target"){
+            if (self.lastReportedStatus == Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED){
+                callback(null);
+            }else {
+                callback(null, self.lastReportedStatus);
+            }
         }
-    }
     },
     
     getCurrentState: function(callback) {
         this.log("Getting current state");
-        this.getState("current", callback);
+        this.getState(callback, "current");
     },
 
     getTargetState: function(callback) {
         this.log("Getting target state");
-        this.getState("target", callback);
+        this.getState(callback, "target");
     },
     
     setTargetState: function (state, callback){
@@ -273,40 +273,31 @@ BroadlinkHost.prototype = {
         b.on("deviceReady", (dev) => {
             if (self.mac_buff(self.mac).equals(dev.mac) || dev.host.address == self.ip) {
                 clearInterval(checkAgain);
-                clearInterval(self.timer)
+
                 switch (state) {
                     case Characteristic.SecuritySystemTargetState.STAY_ARM:
                         dev.set_state(self.stayMode, self.notificationSound, self.alarmSound);
                         self.log("Setting State to " + self.stayMode)
                         self.lastReportedStatus = Characteristic.SecuritySystemTargetState.STAY_ARM;
-                        self.securityService.setCharacteristic(Characteristic.SecuritySystemCurrentState, self.lastReportedStatus);
                         break;
                     case Characteristic.SecuritySystemTargetState.AWAY_ARM:
                         dev.set_state(self.awayMode, self.notificationSound, self.alarmSound);
                         self.log("Setting State to " + self.awayMode)
                         self.lastReportedStatus = Characteristic.SecuritySystemTargetState.AWAY_ARM;
-                        self.securityService.setCharacteristic(Characteristic.SecuritySystemCurrentState, self.lastReportedStatus);
                         break;
                     case Characteristic.SecuritySystemTargetState.NIGHT_ARM:
                         dev.set_state(self.nightMode, self.notificationSound, self.alarmSound);
                         self.log("Setting State to " + self.nightMode)
                         self.lastReportedStatus = Characteristic.SecuritySystemTargetState.NIGHT_ARM;
-                        self.securityService.setCharacteristic(Characteristic.SecuritySystemCurrentState, self.lastReportedStatus);
                         break;
                     case Characteristic.SecuritySystemTargetState.DISARM:
                         dev.set_state("disarm", self.notificationSound, self.alarmSound);
                         self.log("Setting State to Cancel Alarm (Disarm)")
                         self.lastReportedStatus = Characteristic.SecuritySystemTargetState.DISARM;
-                        self.securityService.setCharacteristic(Characteristic.SecuritySystemCurrentState, self.lastReportedStatus);
                         break;
                 };
                 dev.exit();
-                setTimeout(function(){
-                    self.timer = setInterval(function(){
-                        self.statusCheck();
-                    }, 3000);
-                }, 3000)
-                
+                self.securityService.setCharacteristic(Characteristic.SecuritySystemCurrentState, state);
                 callback(null, state);
             } else {
                 dev.exit();
