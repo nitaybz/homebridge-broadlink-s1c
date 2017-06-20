@@ -271,9 +271,7 @@ BroadlinkHost.prototype = {
         var platform = self.platform;
         var b = new broadlink();
         b.discover();
-        self.log("Setting State")
         b.on("deviceReady", (dev) => {
-            self.log("Setting State - device is ready")
             if (self.mac_buff(self.mac).equals(dev.mac) || dev.host.address == self.ip) {
                 clearInterval(checkAgain);
                 switch (state) {
@@ -381,12 +379,9 @@ function BroadlinkSensor(log, config, platform) {
     };
 
     var self = this;
-    setTimeout(function(){
+    self.timer = setInterval(function(){
         self.intervalCheck();
-        self.timer = setInterval(function(){
-            self.intervalCheck();
-        }, 2000);
-    }, 1000)
+    }, 1000);
 }
 
 BroadlinkSensor.prototype = {
