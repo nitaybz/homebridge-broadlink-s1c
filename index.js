@@ -175,7 +175,7 @@ function BroadlinkHost(log, config, platform) {
     this.mac = config.mac;
     this.platform = platform
     this.nightMode = config.nightMode || "part_arm";
-    this.awayMode = config.awayMode || "full-arm";
+    this.awayMode = config.awayMode || "full_arm";
     this.stayMode = config.stayMode || "disarm";
     this.lastReportedStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
     this.alarmSound = config.alarmSound || true;
