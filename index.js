@@ -214,15 +214,15 @@ function BroadlinkHost(log, config, platform) {
         if (platform.triggered){
             var newStatus = Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED;
         } else {
-            var newStatus = plaform.alarmStatus;
+            var newStatus = platform.alarmStatus;
         }
         if (self.lastReportedStatus !== newStatus) {
             
-            self.lastReportedStatus = plaform.alarmStatus;
+            self.lastReportedStatus = platform.alarmStatus;
             if (platform.triggered){
                 self.lastReportedStatus = Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED;
             } else {
-                self.lastReportedStatus = plaform.alarmStatus;
+                self.lastReportedStatus = platform.alarmStatus;
             }
             this.log("State Changed to " + self.lastReportedStatus);
             self.securityService.getCharacteristic(Characteristic.SecuritySystemCurrentState).setValue(self.alarmStatus);
