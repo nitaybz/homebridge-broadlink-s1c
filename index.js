@@ -111,8 +111,9 @@ function broadlinkS1C(log, config, api) {
             }
         });
     }
-    this.refreshAll = setInterval(function(){
-        this.checkAllInterval();
+    var self = this;
+    self.refreshAll = setInterval(function(){
+        self.checkAllInterval();
     }, 2000);
 
 }
