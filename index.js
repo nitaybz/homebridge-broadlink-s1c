@@ -218,8 +218,8 @@ function BroadlinkHost(log, config, platform) {
         if (self.lastReportedStatus !== newStatus) {
             self.lastReportedStatus = newStatus;
             this.log("State Changed to " + self.lastReportedStatus);
-            self.securityService.getCharacteristic(Characteristic.SecuritySystemCurrentState).setValue(self.lastReportedStatus);
-            self.securityService.getCharacteristic(Characteristic.SecuritySystemTargetState).setValue(self.lastReportedStatus);
+            self.securityService.getCharacteristic(Characteristic.SecuritySystemCurrentState).updateValue(self.lastReportedStatus);
+            self.securityService.getCharacteristic(Characteristic.SecuritySystemTargetState).updateValue(self.lastReportedStatus);
         }
     };
     
@@ -362,18 +362,18 @@ function BroadlinkSensor(log, config, platform) {
                 self.detected = (platform.sensors[i].status == 1 ? true : false);
                 if (self.type == "Motion Sensor" && self.detected !== lastDetected) {
                     self.log(self.name + " state is - " + (self.detected ? "Person Detected" : "No Person"));
-                    self.service.getCharacteristic(Characteristic.MotionDetected).setValue(self.detected, undefined);
+                    self.service.getCharacteristic(Characteristic.MotionDetected).updateValue(self.detected, undefined);
                     clearInterval(self.timer);
                     setTimeout(function(){
                         self.detected = false;
-                        self.service.getCharacteristic(Characteristic.MotionDetected).setValue(self.detected, undefined);
+                        self.service.getCharacteristic(Characteristic.MotionDetected).updateValue(self.detected, undefined);
                         self.timer = setInterval(function(){
                             self.intervalCheck();
                         }, 2000); 
                     }, self.motionTimeout*1000)
                 } else if (self.type == "Door Sensor" && self.detected !== lastDetected) {
                     self.log(self.name + " state is - " + (self.detected ? "Open" : "Close"));
-                    self.service.getCharacteristic(Characteristic.ContactSensorState).setValue(platform.sensors[i].status == 1 ?
+                    self.service.getCharacteristic(Characteristic.ContactSensorState).updateValue(platform.sensors[i].status == 1 ?
                         Characteristic.ContactSensorState.CONTACT_NOT_DETECTED : Characteristic.ContactSensorState.CONTACT_DETECTED);
                 }
             }
