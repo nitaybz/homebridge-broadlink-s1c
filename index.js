@@ -273,7 +273,7 @@ BroadlinkHost.prototype = {
         b.on("deviceReady", (dev) => {
             if (self.mac_buff(self.mac).equals(dev.mac) || dev.host.address == self.ip) {
                 clearInterval(checkAgain);
-
+                clearInterval(self.timer)
                 switch (state) {
                     case Characteristic.SecuritySystemTargetState.STAY_ARM:
                         dev.set_state(self.stayMode, self.notificationSound, self.alarmSound);
@@ -301,6 +301,11 @@ BroadlinkHost.prototype = {
                         break;
                 };
                 dev.exit();
+                setTimeout(function(){
+                    self.timer = setInterval(function(){
+                        self.statusCheck();
+                    }, 3000);
+                }, 3000)
                 
                 callback(null, state);
             } else {
