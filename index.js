@@ -61,8 +61,7 @@ function broadlinkS1C(log, config, api) {
                     function(callback){
                         dev.get_trigger_status();
                         dev.on("triggerd_status", (triggered) => {
-                                self.triggered = triggered;
-                                callback (null, self.triggered)
+                                callback (null, triggered)
                         });
                     }, 
                     function(triggered, callback){
@@ -95,6 +94,7 @@ function broadlinkS1C(log, config, api) {
                                 callback (null, "done")      
                             });
                         } else {
+                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED;
                             callback (null, "done")
                         }
                         
@@ -211,22 +211,12 @@ function BroadlinkHost(log, config, platform) {
         
     this.statusCheck = function(){
         var self = this;
-        if (platform.triggered){
-            var newStatus = Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED;
-        } else {
-            var newStatus = platform.alarmStatus;
-        }
+        var newStatus = platform.alarmStatus;
         if (self.lastReportedStatus !== newStatus) {
-            
-            self.lastReportedStatus = platform.alarmStatus;
-            if (platform.triggered){
-                self.lastReportedStatus = Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED;
-            } else {
-                self.lastReportedStatus = platform.alarmStatus;
-            }
+            self.lastReportedStatus = newStatus;
             this.log("State Changed to " + self.lastReportedStatus);
-            self.securityService.getCharacteristic(Characteristic.SecuritySystemCurrentState).setValue(self.alarmStatus);
-            self.securityService.getCharacteristic(Characteristic.SecuritySystemTargetState).setValue(self.alarmStatus);
+            self.securityService.getCharacteristic(Characteristic.SecuritySystemCurrentState).setValue(self.lastReportedStatus);
+            self.securityService.getCharacteristic(Characteristic.SecuritySystemTargetState).setValue(self.lastReportedStatus);
         }
     };
     
@@ -253,13 +243,14 @@ BroadlinkHost.prototype = {
     },
 
     getState: function(command, callback) {
+    var self = this;
 	if (command == "current"){
-            callback(null, this.lastReportedStatus);
+            callback(null, self.lastReportedStatus);
         } else if (command == "target"){
-            if (this.lastReportedStatus == Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED){
+            if (self.lastReportedStatus == Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED){
                 callback(null);
             }else {
-                callback(null, this.lastReportedStatus);
+                callback(null, self.lastReportedStatus);
             }
         }
     },
