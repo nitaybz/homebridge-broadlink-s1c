@@ -173,6 +173,7 @@ function BroadlinkHost(log, config, platform) {
     this.name = config.name;
     this.ip = config.ip;
     this.mac = config.mac;
+    this.platform = platform
     this.nightMode = config.nightMode || "part_arm";
     this.awayMode = config.awayMode || "full-arm";
     this.stayMode = config.stayMode || "disarm";
@@ -267,6 +268,7 @@ BroadlinkHost.prototype = {
     
     setTargetState: function (state, callback){
         var self = this;
+        var platform = self.platform;
         var b = new broadlink();
         b.discover();
         self.log("Setting State")
@@ -274,7 +276,6 @@ BroadlinkHost.prototype = {
             self.log("Setting State - device is ready")
             if (self.mac_buff(self.mac).equals(dev.mac) || dev.host.address == self.ip) {
                 clearInterval(checkAgain);
-
                 switch (state) {
                     case Characteristic.SecuritySystemTargetState.STAY_ARM:
                         dev.set_state(self.stayMode, self.notificationSound, self.alarmSound);
