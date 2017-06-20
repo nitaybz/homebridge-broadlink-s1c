@@ -279,25 +279,29 @@ BroadlinkHost.prototype = {
                         dev.set_state(self.stayMode, self.notificationSound, self.alarmSound);
                         self.log("Setting State to " + self.stayMode)
                         self.lastReportedStatus = Characteristic.SecuritySystemTargetState.STAY_ARM;
+                        self.securityService.setCharacteristic(Characteristic.SecuritySystemCurrentState, self.lastReportedStatus);
                         break;
                     case Characteristic.SecuritySystemTargetState.AWAY_ARM:
                         dev.set_state(self.awayMode, self.notificationSound, self.alarmSound);
                         self.log("Setting State to " + self.awayMode)
                         self.lastReportedStatus = Characteristic.SecuritySystemTargetState.AWAY_ARM;
+                        self.securityService.setCharacteristic(Characteristic.SecuritySystemCurrentState, self.lastReportedStatus);
                         break;
                     case Characteristic.SecuritySystemTargetState.NIGHT_ARM:
                         dev.set_state(self.nightMode, self.notificationSound, self.alarmSound);
                         self.log("Setting State to " + self.nightMode)
                         self.lastReportedStatus = Characteristic.SecuritySystemTargetState.NIGHT_ARM;
+                        self.securityService.setCharacteristic(Characteristic.SecuritySystemCurrentState, self.lastReportedStatus);
                         break;
                     case Characteristic.SecuritySystemTargetState.DISARM:
                         dev.set_state("disarm", self.notificationSound, self.alarmSound);
                         self.log("Setting State to Cancel Alarm (Disarm)")
                         self.lastReportedStatus = Characteristic.SecuritySystemTargetState.DISARM;
+                        self.securityService.setCharacteristic(Characteristic.SecuritySystemCurrentState, self.lastReportedStatus);
                         break;
                 };
                 dev.exit();
-                self.securityService.setCharacteristic(Characteristic.SecuritySystemCurrentState, state);
+                
                 callback(null, state);
             } else {
                 dev.exit();
