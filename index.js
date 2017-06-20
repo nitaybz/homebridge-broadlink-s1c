@@ -297,6 +297,7 @@ BroadlinkHost.prototype = {
                         self.lastReportedStatus = Characteristic.SecuritySystemTargetState.DISARM;
                         break;
                 };
+                platform.alarmStatus = self.lastReportedStatus
                 dev.exit();
                 self.securityService.setCharacteristic(Characteristic.SecuritySystemCurrentState, state);
                 callback(null, state);
