@@ -1,5 +1,6 @@
 var Service, Characteristic;
 var broadlink = require('broadlinkjs-s1c');
+var async = require("async")
 
 module.exports = function(homebridge) {
     Service = homebridge.hap.Service;
@@ -15,6 +16,12 @@ function broadlinkS1C(log, config, api) {
     this.ip = config.ip;
     this.mac = config.mac;
     this.motionTimeout = config.motionTimeout || 30;
+    this.nightMode = config.nightMode || "part_arm";
+    this.awayMode = config.awayMode || "full_arm";
+    this.stayMode = config.stayMode || "disarm";
+    this.triggered = false;
+    this.alarmStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
+
     if (api) {
         this.api = api;
     }
@@ -35,6 +42,78 @@ function broadlinkS1C(log, config, api) {
         }
         return mb;
     }
+
+    var checkAllInterval = function(){
+        var self = this;
+        var b = new broadlink();
+        b.discover();
+        b.on("deviceReady", (dev) => {
+            if (self.mac_buff(self.mac).equals(dev.mac) || dev.host.address == self.ip) {
+                async.waterfall([
+                    function(callback){
+                        dev.get_sensors_status();
+                        dev.on("sensors_status", (status_array) => {
+                            self.sensors = status_array["sensors"];
+                            self.count = status_array["count"];
+                            callback (null)
+                        });
+                    }, 
+                    function(callback){
+                        dev.get_trigger_status();
+                        dev.on("triggerd_status", (triggered) => {
+                                self.triggered = triggered;
+                                callback (null, self.triggered)
+                        });
+                    }, 
+                    function(triggered, callback){
+                        if (!triggered){
+                            dev.get_alarm_status();
+                            dev.on("alarm_status", (status) => {
+                                switch (status) {
+                                    case "Full-Arm":
+                                        if (self.nightMode == "full_arm"){
+                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
+                                        } else if (self.stayMode == "full_arm"){
+                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
+                                        } else if (self.awayMode == "full_arm"){
+                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
+                                        }
+                                        break;
+                                    case "Part-Arm":
+                                        if (self.nightMode == "part_arm"){
+                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
+                                        } else if (self.stayMode == "part_arm"){
+                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
+                                        } else if (self.awayMode == "part_arm"){
+                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
+                                        }
+                                        break;
+                                    case "Cancel Alarm":
+                                        self.alarmStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
+                                        break;
+                                };
+                                callback (null, "done")      
+                            });
+                        } else {
+                            callback (null, "done")
+                        }
+                        
+                    }
+                ], function (err, result){
+                        if (result !== "done") {
+                            self.log(err)
+                        }
+                        dev.exit();
+                    }
+                )
+            } else {
+                dev.exit();
+            }
+        });
+    }
+    this.refreshAll = setInterval(function(){
+        checkAllInterval();
+    }, 2000);
 
 }
 
@@ -61,7 +140,7 @@ broadlinkS1C.prototype = {
                             foundSensor.ip = this.ip;
                             foundSensor.mac = this.mac;
                             foundSensor.motionTimeout = this.motionTimeout
-                            var accessory = new BroadlinkSensor(this.log, foundSensor);
+                            var accessory = new BroadlinkSensor(this.log, foundSensor, this);
                             myAccessories.push(accessory);
                             this.log('Created ' + this.name + "  - " + foundSensor.type +' Named: ' + foundSensor.sensorName);
                         }
@@ -70,12 +149,9 @@ broadlinkS1C.prototype = {
                     hostConfig.name = this.name
                     hostConfig.ip = this.ip;
                     hostConfig.mac = this.mac;
-                    hostConfig.nightMode = this.config.nightMode || "part_arm";
-                    hostConfig.awayMode = this.config.awayMode || "full_arm";
-                    hostConfig.stayMode = this.config.stayMode || "disarm";
                     hostConfig.alarmSound = this.config.alarmSound || true;
                     hostConfig.notificationSound = this.config.notificationSound || false;
-                    var hostAccessory = new BroadlinkHost(this.log, hostConfig);
+                    var hostAccessory = new BroadlinkHost(this.log, hostConfig, this);
                     myAccessories.push(hostAccessory);
                     callback(myAccessories);
                 });
@@ -86,20 +162,20 @@ broadlinkS1C.prototype = {
         });
         var refresh = setInterval(function(){
             b.discover();
-        }, 1000);
+        }, 2000);
         
     }
 }
-function BroadlinkHost(log, config) {
+function BroadlinkHost(log, config, platform) {
     this.log = log;
     this.config = config;
     this.name = config.name;
     this.ip = config.ip;
     this.mac = config.mac;
-    this.alarmStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
     this.nightMode = config.nightMode || "part_arm";
     this.awayMode = config.awayMode || "full-arm";
     this.stayMode = config.stayMode || "disarm";
+    this.lastReportedStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
     this.alarmSound = config.alarmSound || true;
     this.notificationSound = config.notificationSound || false;
     if (!this.ip && !this.mac) throw new Error("You must provide a config value for 'ip' or 'mac'.");
@@ -134,63 +210,23 @@ function BroadlinkHost(log, config) {
         
     this.statusCheck = function(){
         var self = this;
-        var b = new broadlink();
-        b.discover();
-
-        b.on("deviceReady", (dev) => {
-            if (self.mac_buff(self.mac).equals(dev.mac) || dev.host.address == self.ip) {
-		        dev.get_trigger_status();
-                dev.on("triggerd_status", (triggered) => {
-                        if (triggered){
-                            dev.exit();
-                            if (self.alarmStatus !== Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED){
-                                self.alarmStatus = Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED;
-                                self.securityService.getCharacteristic(Characteristic.SecuritySystemCurrentState).setValue(self.alarmStatus);
-                                self.log("Alarm is Triggered!!");
-                            }   
-                        } else {
-                            dev.get_alarm_status();
-                            dev.on("alarm_status", (status) => {
-                                dev.exit();
-                                var lastStatus = self.alarmStatus;
-                                switch (status) {
-                                    case "Full-Arm":
-                                        if (self.nightMode == "full_arm"){
-                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
-                                        } else if (self.stayMode == "full_arm"){
-                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
-                                        } else if (self.awayMode == "full_arm"){
-                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
-                                        }
-                                        break;
-                                    case "Part-Arm":
-                                        if (self.nightMode == "part_arm"){
-                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
-                                        } else if (self.stayMode == "part_arm"){
-                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
-                                        } else if (self.awayMode == "part_arm"){
-                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
-                                        }
-                                        break;
-                                    case "Cancel Alarm":
-                                        self.alarmStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
-                                        break;
-                                };
-                                
-                                if (lastStatus !== self.alarmStatus) {
-                                    this.log("State Changed to " + self.alarmStatus);
-                                    self.securityService.getCharacteristic(Characteristic.SecuritySystemCurrentState).setValue(self.alarmStatus);
-                                    self.securityService.getCharacteristic(Characteristic.SecuritySystemTargetState).setValue(self.alarmStatus);
-                                }       
-                            });
-                        }
-                    
-                });
-                
+        if (platform.triggered){
+            var newStatus = Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED;
+        } else {
+            var newStatus = plaform.alarmStatus;
+        }
+        if (self.lastReportedStatus !== newStatus) {
+            
+            self.lastReportedStatus = plaform.alarmStatus;
+            if (platform.triggered){
+                self.lastReportedStatus = Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED;
             } else {
-                dev.exit();
+                self.lastReportedStatus = plaform.alarmStatus;
             }
-        });
+            this.log("State Changed to " + self.lastReportedStatus);
+            self.securityService.getCharacteristic(Characteristic.SecuritySystemCurrentState).setValue(self.alarmStatus);
+            self.securityService.getCharacteristic(Characteristic.SecuritySystemTargetState).setValue(self.alarmStatus);
+        }
     };
     
     var self = this;
@@ -215,26 +251,26 @@ BroadlinkHost.prototype = {
 	callback(); // success
     },
 
-    getState: function(callback, command) {
+    getState: function(command, callback) {
 	if (command == "current"){
-            callback(null, this.alarmStatus);
+            callback(null, this.lastReportedStatus);
         } else if (command == "target"){
-            if (this.alarmStatus == Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED){
+            if (this.lastReportedStatus == Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED){
                 callback(null);
             }else {
-                callback(null, this.alarmStatus);
+                callback(null, this.lastReportedStatus);
             }
         }
     },
     
     getCurrentState: function(callback) {
         this.log("Getting current state");
-        this.getState(callback, "current");
+        this.getState("current", callback);
     },
 
     getTargetState: function(callback) {
         this.log("Getting target state");
-        this.getState(callback, "target");
+        this.getState( "target", callback);
     },
     
     setTargetState: function (state, callback){
@@ -250,22 +286,22 @@ BroadlinkHost.prototype = {
                     case Characteristic.SecuritySystemTargetState.STAY_ARM:
                         dev.set_state(self.stayMode, self.notificationSound, self.alarmSound);
                         self.log("Setting State to " + self.stayMode)
-                        self.alarmStatus = Characteristic.SecuritySystemTargetState.STAY_ARM;
+                        self.lastReportedStatus = Characteristic.SecuritySystemTargetState.STAY_ARM;
                         break;
                     case Characteristic.SecuritySystemTargetState.AWAY_ARM:
                         dev.set_state(self.awayMode, self.notificationSound, self.alarmSound);
                         self.log("Setting State to " + self.awayMode)
-                        self.alarmStatus = Characteristic.SecuritySystemTargetState.AWAY_ARM;
+                        self.lastReportedStatus = Characteristic.SecuritySystemTargetState.AWAY_ARM;
                         break;
                     case Characteristic.SecuritySystemTargetState.NIGHT_ARM:
                         dev.set_state(self.nightMode, self.notificationSound, self.alarmSound);
                         self.log("Setting State to " + self.nightMode)
-                        self.alarmStatus = Characteristic.SecuritySystemTargetState.NIGHT_ARM;
+                        self.lastReportedStatus = Characteristic.SecuritySystemTargetState.NIGHT_ARM;
                         break;
                     case Characteristic.SecuritySystemTargetState.DISARM:
                         dev.set_state("disarm", self.notificationSound, self.alarmSound);
                         self.log("Setting State to Cancel Alarm (Disarm)")
-                        self.alarmStatus = Characteristic.SecuritySystemTargetState.DISARM;
+                        self.lastReportedStatus = Characteristic.SecuritySystemTargetState.DISARM;
                         break;
                 };
                 dev.exit();
@@ -275,13 +311,14 @@ BroadlinkHost.prototype = {
                 dev.exit();
             }
         });
+
         var checkAgain = setInterval(function() {
             b.discover();
-        }, 1000)
+        }, 2000)
     }
 }
 
-function BroadlinkSensor(log, config) {
+function BroadlinkSensor(log, config, platform) {
     this.log = log;
     this.config = config;
     this.serial = config.serial || "";
@@ -324,53 +361,37 @@ function BroadlinkSensor(log, config) {
     }
     this.intervalCheck = function(){
         var self = this;
-        var b = new broadlink();
-        b.discover();
-
-        b.on("deviceReady", (dev) => {
-            if (self.mac_buff(self.mac).equals(dev.mac) || dev.host.address == self.ip) {
-                dev.get_sensors_status();
-                dev.on("sensors_status", (status_array) => {
-                    var sensors = status_array["sensors"];
-                    var count = status_array["count"];
-                    dev.exit();
-                    
-                    for (var i=0; i<count; i++){
-                        if (self.serial == sensors[i].serial){
-                            lastDetected = self.detected;
-                            self.detected = (sensors[i].status == 1 ? true : false);
-                            if (sensors[i].type == "Motion Sensor" && self.detected !== lastDetected) {
-                                self.log(self.name + " state is - " + (self.detected ? "Person Detected" : "No Person"));
-                                self.service.getCharacteristic(Characteristic.MotionDetected).setValue(self.detected, undefined);
-                                clearInterval(this.timer);
-                                setTimeout(function(){
-                                    self.detected = false;
-                                    self.service.getCharacteristic(Characteristic.MotionDetected).setValue(self.detected, undefined);
-                                    this.timer = setInterval(function(){
-                                        self.intervalCheck();
-                                    }, 2000); 
-                                }, self.motionTimeout*1000)
-                            } else if (sensors[i].type == "Door Sensor" && self.detected !== lastDetected) {
-                                self.log(self.name + " state is - " + (self.detected ? "Open" : "Close"));
-                                self.service.getCharacteristic(Characteristic.ContactSensorState).setValue(sensors[i].status == 1 ?
-				                    Characteristic.ContactSensorState.CONTACT_NOT_DETECTED : Characteristic.ContactSensorState.CONTACT_DETECTED);
-                            }
-                        }
-                    }
-                });
-            } else {
-                dev.exit();
+        for (var i=0; i<platform.count; i++){
+            if (self.serial == platform.sensors[i].serial){
+                lastDetected = self.detected;
+                self.detected = (platform.sensors[i].status == 1 ? true : false);
+                if (self.type == "Motion Sensor" && self.detected !== lastDetected) {
+                    self.log(self.name + " state is - " + (self.detected ? "Person Detected" : "No Person"));
+                    self.service.getCharacteristic(Characteristic.MotionDetected).setValue(self.detected, undefined);
+                    clearInterval(self.timer);
+                    setTimeout(function(){
+                        self.detected = false;
+                        self.service.getCharacteristic(Characteristic.MotionDetected).setValue(self.detected, undefined);
+                        self.timer = setInterval(function(){
+                            self.intervalCheck();
+                        }, 2000); 
+                    }, self.motionTimeout*1000)
+                } else if (self.type == "Door Sensor" && self.detected !== lastDetected) {
+                    self.log(self.name + " state is - " + (self.detected ? "Open" : "Close"));
+                    self.service.getCharacteristic(Characteristic.ContactSensorState).setValue(sensors[i].status == 1 ?
+                        Characteristic.ContactSensorState.CONTACT_NOT_DETECTED : Characteristic.ContactSensorState.CONTACT_DETECTED);
+                }
             }
-        });
-
-
+        }
     };
-    var self = this;
-    self.intervalCheck();
-    this.timer = setInterval(function(){
-        self.intervalCheck();
-    }, 2000);
 
+    var self = this;
+    setTimeout(function(){
+        self.intervalCheck();
+        self.timer = setInterval(function(){
+            self.intervalCheck();
+        }, 2000);
+    }, 1000)
 }
 
 BroadlinkSensor.prototype = {
