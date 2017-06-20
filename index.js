@@ -176,7 +176,7 @@ function BroadlinkHost(log, config, platform) {
     this.nightMode = config.nightMode || "part_arm";
     this.awayMode = config.awayMode || "full-arm";
     this.stayMode = config.stayMode || "disarm";
-    this.lastReportedStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
+    //this.lastReportedStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
     this.alarmSound = config.alarmSound || true;
     this.notificationSound = config.notificationSound || false;
     if (!this.ip && !this.mac) throw new Error("You must provide a config value for 'ip' or 'mac'.");
@@ -245,14 +245,14 @@ BroadlinkHost.prototype = {
     getState: function(command, callback) {
     var self = this;
 	if (command == "current"){
+        callback(null, self.lastReportedStatus);
+    } else if (command == "target"){
+        if (self.lastReportedStatus == Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED){
+            callback(null);
+        }else {
             callback(null, self.lastReportedStatus);
-        } else if (command == "target"){
-            if (self.lastReportedStatus == Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED){
-                callback(null);
-            }else {
-                callback(null, self.lastReportedStatus);
-            }
         }
+    }
     },
     
     getCurrentState: function(callback) {
@@ -262,7 +262,7 @@ BroadlinkHost.prototype = {
 
     getTargetState: function(callback) {
         this.log("Getting target state");
-        this.getState( "target", callback);
+        this.getState("target", callback);
     },
     
     setTargetState: function (state, callback){
