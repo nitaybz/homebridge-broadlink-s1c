@@ -26,7 +26,7 @@
   "author": "nitaybz",
   "license": "MIT",
   "dependencies": {
-    "broadlinkjs-s1c": "nitaybz/broadlinkjs-s1c"
+    "broadlinkjs-s1c": "nitaybz/broadlinkjs-s1c",
     "async": "*"
   },
   "bugs": {
