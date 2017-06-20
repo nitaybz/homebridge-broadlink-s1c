@@ -48,21 +48,21 @@ function broadlinkS1C(log, config, api) {
         var b = new broadlink();
         b.discover();
         b.on("deviceReady", (dev) => {
-            if (self.mac_buff(self.mac).equals(dev.mac) || dev.host.address == self.ip) {
+            if (this.mac_buff(this.mac).equals(dev.mac) || dev.host.address == this.ip) {
                 async.waterfall([
                     function(callback){
                         dev.get_sensors_status();
                         dev.on("sensors_status", (status_array) => {
-                            self.sensors = status_array["sensors"];
-                            self.count = status_array["count"];
+                            this.sensors = status_array["sensors"];
+                            this.count = status_array["count"];
                             callback (null)
                         });
                     }, 
                     function(callback){
                         dev.get_trigger_status();
                         dev.on("triggerd_status", (triggered) => {
-                                self.triggered = triggered;
-                                callback (null, self.triggered)
+                                this.triggered = triggered;
+                                callback (null, this.triggered)
                         });
                     }, 
                     function(triggered, callback){
@@ -71,25 +71,25 @@ function broadlinkS1C(log, config, api) {
                             dev.on("alarm_status", (status) => {
                                 switch (status) {
                                     case "Full-Arm":
-                                        if (self.nightMode == "full_arm"){
-                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
-                                        } else if (self.stayMode == "full_arm"){
-                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
-                                        } else if (self.awayMode == "full_arm"){
-                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
+                                        if (this.nightMode == "full_arm"){
+                                            this.alarmStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
+                                        } else if (this.stayMode == "full_arm"){
+                                            this.alarmStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
+                                        } else if (this.awayMode == "full_arm"){
+                                            this.alarmStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
                                         }
                                         break;
                                     case "Part-Arm":
-                                        if (self.nightMode == "part_arm"){
-                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
-                                        } else if (self.stayMode == "part_arm"){
-                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
-                                        } else if (self.awayMode == "part_arm"){
-                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
+                                        if (this.nightMode == "part_arm"){
+                                            this.alarmStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
+                                        } else if (this.stayMode == "part_arm"){
+                                            this.alarmStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
+                                        } else if (this.awayMode == "part_arm"){
+                                            this.alarmStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
                                         }
                                         break;
                                     case "Cancel Alarm":
-                                        self.alarmStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
+                                        this.alarmStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
                                         break;
                                 };
                                 callback (null, "done")      
@@ -101,7 +101,7 @@ function broadlinkS1C(log, config, api) {
                     }
                 ], function (err, result){
                         if (result !== "done") {
-                            self.log(err)
+                            this.log(err)
                         }
                         dev.exit();
                     }
