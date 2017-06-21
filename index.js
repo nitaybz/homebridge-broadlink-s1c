@@ -113,7 +113,7 @@ function broadlinkS1C(log, config, api) {
     var self = this;
     self.refreshAll = setInterval(function(){
         self.checkAllInterval();
-    }, 2000);
+    }, 1500);
 
 }
 
@@ -369,7 +369,7 @@ function BroadlinkSensor(log, config, platform) {
                         self.service.getCharacteristic(Characteristic.MotionDetected).updateValue(self.detected, undefined);
                         self.timer = setInterval(function(){
                             self.intervalCheck();
-                        }, 2000); 
+                        }, 1000); 
                     }, self.motionTimeout*1000)
                 } else if (self.type == "Door Sensor" && self.detected !== lastDetected) {
                     self.log(self.name + " state is - " + (self.detected ? "Open" : "Close"));
