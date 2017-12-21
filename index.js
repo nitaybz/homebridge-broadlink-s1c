@@ -1,6 +1,8 @@
 var Service, Characteristic;
-var broadlink = require('broadlinkjs-s1c');
 var async = require("async")
+var broadlink = require('./lib/broadlinkjs');
+
+const getDevice = require('./lib/getDevice');
 
 module.exports = function(homebridge) {
     Service = homebridge.hap.Service;
@@ -20,100 +22,78 @@ function broadlinkS1C(log, config, api) {
     this.awayMode = config.awayMode || "full_arm";
     this.stayMode = config.stayMode || "disarm";
     this.alarmStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
+    if (!this.ip && !this.mac) throw new Error("You must provide a config value for 'ip' or 'mac'.");
 
     if (api) {
         this.api = api;
     }
 
-    this.mac_buff = function(mac) {
-        var mb = new Buffer(6);
-        if (mac) {
-            var values = mac.split(':');
-            if (!values || values.length !== 6) {
-                throw new Error('Invalid MAC [' + mac + ']; should follow pattern ##:##:##:##:##:##');
-            }
-            for (var i = 0; i < values.length; ++i) {
-                var tmpByte = parseInt(values[i], 16);
-                mb.writeUInt8(tmpByte, i);
-            }
-        } else {
-            //this.log("MAC address emtpy, using IP: " + this.ip);
-        }
-        return mb;
-    }
-
     this.checkAllInterval = function(){
         var self = this;
-        var b = new broadlink();
-        b.discover();
-        b.on("deviceReady", (dev) => {
-            if (self.mac_buff(self.mac).equals(dev.mac) || dev.host.address == self.ip) {
-                async.waterfall([
-                    function(callback){
-                        dev.get_sensors_status();
-                        dev.on("sensors_status", (status_array) => {
-                            self.sensors = status_array["sensors"];
-                            self.count = status_array["count"];
-                            callback (null)
+        var host = this.ip || this.mac
+        var log = this.log
+        this.device = getDevice({ host, log })
+        if (this.device !== undefined){
+            async.waterfall([
+                function(callback){
+                    self.device.get_sensors_status(function(status_array){
+                        self.sensors = status_array["sensors"];
+                        self.count = status_array["count"];
+                        callback()
+                    });
+                }, 
+                function(callback){
+                    self.device.get_trigger_status(function(triggered){
+                        callback(null, triggered)
+                    });
+                }, 
+                function(triggered, callback){
+                    if (!triggered){
+                        self.device.get_alarm_status(function(status){
+                            switch (status) {
+                                case "Full-Arm":
+                                    if (self.nightMode == "full_arm"){
+                                        self.alarmStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
+                                    } else if (self.stayMode == "full_arm"){
+                                        self.alarmStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
+                                    } else if (self.awayMode == "full_arm"){
+                                        self.alarmStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
+                                    }
+                                    break;
+                                case "Part-Arm":
+                                    if (self.nightMode == "part_arm"){
+                                        self.alarmStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
+                                    } else if (self.stayMode == "part_arm"){
+                                        self.alarmStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
+                                    } else if (self.awayMode == "part_arm"){
+                                        self.alarmStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
+                                    }
+                                    break;
+                                case "Cancel Alarm":
+                                    self.alarmStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
+                                    break;
+                            };
+                            callback (null, "done") 
+
                         });
-                    }, 
-                    function(callback){
-                        dev.get_trigger_status();
-                        dev.on("triggerd_status", (triggered) => {
-                                callback (null, triggered)
-                        });
-                    }, 
-                    function(triggered, callback){
-                        if (!triggered){
-                            dev.get_alarm_status();
-                            dev.on("alarm_status", (status) => {
-                                switch (status) {
-                                    case "Full-Arm":
-                                        if (self.nightMode == "full_arm"){
-                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
-                                        } else if (self.stayMode == "full_arm"){
-                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
-                                        } else if (self.awayMode == "full_arm"){
-                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
-                                        }
-                                        break;
-                                    case "Part-Arm":
-                                        if (self.nightMode == "part_arm"){
-                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
-                                        } else if (self.stayMode == "part_arm"){
-                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.STAY_ARM;
-                                        } else if (self.awayMode == "part_arm"){
-                                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
-                                        }
-                                        break;
-                                    case "Cancel Alarm":
-                                        self.alarmStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
-                                        break;
-                                };
-                                callback (null, "done")      
-                            });
-                        } else {
-                            self.alarmStatus = Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED;
-                            callback (null, "done")
-                        }
-                        
+                    } else {
+                        self.alarmStatus = Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED;
+                        callback (null, "done")
                     }
-                ], function (err, result){
-                        if (result !== "done") {
-                            self.log(err)
-                        }
-                        dev.exit();
+                    
+                }
+            ], function (err, result){
+                    if (result !== "done") {
+                        self.log(err)
                     }
-                )
-            } else {
-                dev.exit();
-            }
-        });
+                }
+            )
+        }
     }
-    var self = this;
+    
     self.refreshAll = setInterval(function(){
         self.checkAllInterval();
-    }, 1500);
+    }, 1000);
 
 }
 
@@ -121,15 +101,25 @@ broadlinkS1C.prototype = {
     accessories: function(callback) {
         //For each device in cfg, create an accessory!
         var myAccessories = [];
-        var b = new broadlink();
-        b.on("deviceReady", (dev) => {
-            if (dev.type == "S1C" && (this.mac_buff(this.mac).equals(dev.mac) || dev.host.address == this.ip)) {
-                this.log("S1C Detected");
-                dev.get_sensors_status();
-                dev.on("sensors_status", (status_array) => {
-                    dev.exit();
-                    clearInterval(refresh);
-                    var count = status_array["count"];
+
+        var self = this;
+        var host = this.ip || this.mac
+        var log = this.log
+        this.device = getDevice({ host, log })
+        var counter = 0;
+        if (this.device == undefined && counter < 10){
+            counter++
+            this.log("Searching for S1C device... Please Wait!")
+            setTimeout(function(){
+                self.accessories(callback)
+            }, 3000)
+        } else if (this.device == undefined && counter >= 10){
+            var err = new Error("Could not find S1C device at " + host + " !")
+            self.log(err)
+            callback(err, null)
+        } else {
+            this.device.get_sensors_status(function(status_array){
+                var count = status_array["count"];
                     var sensors = status_array["sensors"];
                     for (var i = 0; i < count; i++) {
                         if ((sensors[i].type == "Motion Sensor") || (sensors[i].type ==  "Door Sensor")) {
@@ -157,18 +147,11 @@ broadlinkS1C.prototype = {
                     var hostAccessory = new BroadlinkHost(this.log, hostConfig, this);
                     myAccessories.push(hostAccessory);
                     callback(myAccessories);
-                });
-            } else {
-                console.log(dev.type + "@" + dev.host.address + " found... not S1C!");
-                dev.exit();
-            }
-        });
-        var refresh = setInterval(function(){
-            b.discover();
-        }, 2000);
-        
+            });
+        }
     }
 }
+
 function BroadlinkHost(log, config, platform) {
     this.log = log;
     this.config = config;
@@ -182,24 +165,7 @@ function BroadlinkHost(log, config, platform) {
     this.lastReportedStatus = Characteristic.SecuritySystemCurrentState.DISARMED;
     this.alarmSound = config.alarmSound || true;
     this.notificationSound = config.notificationSound || false;
-    if (!this.ip && !this.mac) throw new Error("You must provide a config value for 'ip' or 'mac'.");
-    // MAC string to MAC buffer
-    this.mac_buff = function(mac) {
-        var mb = new Buffer(6);
-        if (mac) {
-            var values = mac.split(':');
-            if (!values || values.length !== 6) {
-                throw new Error('Invalid MAC [' + mac + ']; should follow pattern ##:##:##:##:##:##');
-            }
-            for (var i = 0; i < values.length; ++i) {
-                var tmpByte = parseInt(values[i], 16);
-                mb.writeUInt8(tmpByte, i);
-            }
-        } else {
-            //this.log("MAC address emtpy, using IP: " + this.ip);
-        }
-        return mb;
-    }
+
 
     this.securityService = new Service.SecuritySystem(this.name);
 
@@ -227,7 +193,7 @@ function BroadlinkHost(log, config, platform) {
     self.statusCheck();
     self.timer = setInterval(function(){
         self.statusCheck();
-    }, 3000);
+    }, 2000);
 
 }
 
@@ -241,7 +207,7 @@ BroadlinkHost.prototype = {
         return [this.securityService, informationService];
     },
     identify: function(callback) {
-	this.log("Identify requested!");
+	    this.log("Identify requested!");
 	callback(); // success
     },
 
@@ -269,47 +235,48 @@ BroadlinkHost.prototype = {
     },
     
     setTargetState: function (state, callback){
-        var self = this;
         var platform = self.platform;
-        var b = new broadlink();
-        b.discover();
-        b.on("deviceReady", (dev) => {
-            if (self.mac_buff(self.mac).equals(dev.mac) || dev.host.address == self.ip) {
-                clearInterval(checkAgain);
-                switch (state) {
-                    case Characteristic.SecuritySystemTargetState.STAY_ARM:
-                        dev.set_state(self.stayMode, self.notificationSound, self.alarmSound);
-                        self.log("Setting State to " + self.stayMode)
-                        self.lastReportedStatus = Characteristic.SecuritySystemTargetState.STAY_ARM;
-                        break;
-                    case Characteristic.SecuritySystemTargetState.AWAY_ARM:
-                        dev.set_state(self.awayMode, self.notificationSound, self.alarmSound);
-                        self.log("Setting State to " + self.awayMode)
-                        self.lastReportedStatus = Characteristic.SecuritySystemTargetState.AWAY_ARM;
-                        break;
-                    case Characteristic.SecuritySystemTargetState.NIGHT_ARM:
-                        dev.set_state(self.nightMode, self.notificationSound, self.alarmSound);
-                        self.log("Setting State to " + self.nightMode)
-                        self.lastReportedStatus = Characteristic.SecuritySystemTargetState.NIGHT_ARM;
-                        break;
-                    case Characteristic.SecuritySystemTargetState.DISARM:
-                        dev.set_state("disarm", self.notificationSound, self.alarmSound);
-                        self.log("Setting State to Cancel Alarm (Disarm)")
-                        self.lastReportedStatus = Characteristic.SecuritySystemTargetState.DISARM;
-                        break;
-                };
-                platform.alarmStatus = self.lastReportedStatus
-                dev.exit();
-                self.securityService.setCharacteristic(Characteristic.SecuritySystemCurrentState, state);
-                callback(null, state);
-            } else {
-                dev.exit();
-            }
-        });
-
-        var checkAgain = setInterval(function() {
-            b.discover();
-        }, 2000)
+        var host = this.ip || this.mac
+        var log = this.log
+        this.device = getDevice({ host, log })
+        var counter = 0;
+        if (this.device == undefined && counter < 10){
+            counter++
+            this.log("Searching for S1C device... Please Wait!")
+            setTimeout(function(){
+                self.setTargetState(state, callback)
+            }, 3000)
+        } else if (this.device == undefined && counter >= 10){
+            var err = new Error("Could not find S1C at " + host + " !")
+            self.log(err)
+            callback(err, null)
+        } else {
+            switch (state) {
+                case Characteristic.SecuritySystemTargetState.STAY_ARM:
+                    self.device.set_state(self.stayMode, self.notificationSound, self.alarmSound);
+                    self.log("Setting State to " + self.stayMode)
+                    self.lastReportedStatus = Characteristic.SecuritySystemTargetState.STAY_ARM;
+                    break;
+                case Characteristic.SecuritySystemTargetState.AWAY_ARM:
+                    self.device.set_state(self.awayMode, self.notificationSound, self.alarmSound);
+                    self.log("Setting State to " + self.awayMode)
+                    self.lastReportedStatus = Characteristic.SecuritySystemTargetState.AWAY_ARM;
+                    break;
+                case Characteristic.SecuritySystemTargetState.NIGHT_ARM:
+                    self.device.set_state(self.nightMode, self.notificationSound, self.alarmSound);
+                    self.log("Setting State to " + self.nightMode)
+                    self.lastReportedStatus = Characteristic.SecuritySystemTargetState.NIGHT_ARM;
+                    break;
+                case Characteristic.SecuritySystemTargetState.DISARM:
+                    self.device.set_state("disarm", self.notificationSound, self.alarmSound);
+                    self.log("Setting State to Cancel Alarm (Disarm)")
+                    self.lastReportedStatus = Characteristic.SecuritySystemTargetState.DISARM;
+                    break;
+            };
+            platform.alarmStatus = self.lastReportedStatus
+            self.securityService.setCharacteristic(Characteristic.SecuritySystemCurrentState, state);
+            callback(null, state);
+        }
     }
 }
 
@@ -324,25 +291,6 @@ function BroadlinkSensor(log, config, platform) {
     this.detected = false;
     this.motionTimeout = config.motionTimeout;
 
-    if (!this.ip && !this.mac) throw new Error("You must provide a config value for 'ip' or 'mac'.");
-    var lastDetected;
-    // MAC string to MAC buffer
-    this.mac_buff = function(mac) {
-        var mb = new Buffer(6);
-        if (mac) {
-            var values = mac.split(':');
-            if (!values || values.length !== 6) {
-                throw new Error('Invalid MAC [' + mac + ']; should follow pattern ##:##:##:##:##:##');
-            }
-            for (var i = 0; i < values.length; ++i) {
-                var tmpByte = parseInt(values[i], 16);
-                mb.writeUInt8(tmpByte, i);
-            }
-        } else {
-            //this.log("MAC address emtpy, using IP: " + this.ip);
-        }
-        return mb;
-    }
             
     if (this.type == "Motion Sensor"){
         console.log("Found Motion Sensor");

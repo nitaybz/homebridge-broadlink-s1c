@@ -6,7 +6,8 @@ no ability to control the alarm state (yet).
 
 Inspired and forked from [homebridge-broadlink-platform](https://github.com/smka/homebridge-broadlink-platform) By [@smka](https://github.com/smka)
 
-#### New and improved version (2.2.0), ligher and easier on the system! (more friendly with other broadlink plugins)
+
+#### New version 3.0, should solve the `digital envelope routines:EVP_DecryptFinal` error and improve stability and response
 
 # Installation
 0. Config your S1C device  and sensors with default e-Control app (for the first time)
