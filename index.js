@@ -133,7 +133,7 @@ broadlinkS1C.prototype = {
                             foundSensor.motionTimeout = this.motionTimeout
                             var accessory = new BroadlinkSensor(this.log, foundSensor, this);
                             myAccessories.push(accessory);
-                            this.log('Created ' + this.name + "  - " + foundSensor.type +' Named: ' + foundSensor.sensorName);
+                            self.log('Created ' + this.name + "  - " + foundSensor.type +' Named: ' + foundSensor.sensorName);
                         }
                     }
                     var hostConfig = {};
