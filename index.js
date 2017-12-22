@@ -12,6 +12,7 @@ module.exports = function(homebridge) {
 }
 
 function broadlinkS1C(log, config, api) {
+    var self = this;
     this.log = log;
     this.config = config;
     this.name = config.name;
