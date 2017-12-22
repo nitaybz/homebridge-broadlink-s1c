@@ -128,24 +128,24 @@ broadlinkS1C.prototype = {
                             foundSensor.sensorName = sensors[i].name;
                             foundSensor.serial = sensors[i].serial;
                             foundSensor.type = sensors[i].type;
-                            foundSensor.ip = this.ip;
-                            foundSensor.mac = this.mac;
+                            foundSensor.ip = self.ip;
+                            foundSensor.mac = self.mac;
                             foundSensor.motionTimeout = this.motionTimeout
-                            var accessory = new BroadlinkSensor(this.log, foundSensor, this);
+                            var accessory = new BroadlinkSensor(self.log, foundSensor, self);
                             myAccessories.push(accessory);
-                            self.log('Created ' + this.name + "  - " + foundSensor.type +' Named: ' + foundSensor.sensorName);
+                            self.log('Created ' + self.name + "  - " + foundSensor.type +' Named: ' + foundSensor.sensorName);
                         }
                     }
                     var hostConfig = {};
-                    hostConfig.name = this.name
-                    hostConfig.ip = this.ip;
-                    hostConfig.mac = this.mac;
-                    hostConfig.alarmSound = this.config.alarmSound || true;
-                    hostConfig.notificationSound = this.config.notificationSound || false;
-                    hostConfig.nightMode = this.nightMode;
-                    hostConfig.awayMode = this.awayMode;
-                    hostConfig.stayMode = this.stayMode;
-                    var hostAccessory = new BroadlinkHost(this.log, hostConfig, this);
+                    hostConfig.name = self.name
+                    hostConfig.ip = self.ip;
+                    hostConfig.mac = self.mac;
+                    hostConfig.alarmSound = self.config.alarmSound || true;
+                    hostConfig.notificationSound = self.config.notificationSound || false;
+                    hostConfig.nightMode = self.nightMode;
+                    hostConfig.awayMode = self.awayMode;
+                    hostConfig.stayMode = self.stayMode;
+                    var hostAccessory = new BroadlinkHost(self.log, hostConfig, self);
                     myAccessories.push(hostAccessory);
                     callback(myAccessories);
             });
