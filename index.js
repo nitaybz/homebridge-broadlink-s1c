@@ -303,8 +303,8 @@ function BroadlinkSensor(log, config, platform) {
         console.log("Found Door sensor");
         this.service = new Service.ContactSensor(this.name);
     }
+    var self = this;
     this.intervalCheck = function(){
-        var self = this;
         for (var i=0; i<platform.count; i++){
             if (self.serial == platform.sensors[i].serial){
                 lastDetected = self.detected;
