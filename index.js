@@ -236,6 +236,7 @@ BroadlinkHost.prototype = {
     },
     
     setTargetState: function (state, callback){
+    	var self = this
         var platform = self.platform;
         var host = this.ip || this.mac
         var log = this.log
