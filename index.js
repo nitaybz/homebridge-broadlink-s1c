@@ -130,7 +130,7 @@ broadlinkS1C.prototype = {
                             foundSensor.type = sensors[i].type;
                             foundSensor.ip = self.ip;
                             foundSensor.mac = self.mac;
-                            foundSensor.motionTimeout = this.motionTimeout
+                            foundSensor.motionTimeout = self.motionTimeout
                             var accessory = new BroadlinkSensor(self.log, foundSensor, self);
                             myAccessories.push(accessory);
                             self.log('Created ' + self.name + "  - " + foundSensor.type +' Named: ' + foundSensor.sensorName);
@@ -305,15 +305,17 @@ function BroadlinkSensor(log, config, platform) {
         this.service = new Service.ContactSensor(this.name);
     }
     var self = this;
-    this.intervalCheck = function(){
+    self.intervalCheck = function(){
         for (var i=0; i<platform.count; i++){
             if (self.serial == platform.sensors[i].serial){
-                lastDetected = self.detected;
+                var lastDetected;
+                if (self.detected) lastDetected = true
+                else lastDetected = false
                 self.detected = (platform.sensors[i].status == 1 ? true : false);
                 if (self.type == "Motion Sensor" && self.detected !== lastDetected) {
                     self.log(self.name + " state is - " + (self.detected ? "Person Detected" : "No Person"));
                     self.service.getCharacteristic(Characteristic.MotionDetected).updateValue(self.detected, undefined);
-                    clearInterval(self.timer);
+                    clearInterval(self.intervalCheck);
                     setTimeout(function(){
                         self.detected = false;
                         self.service.getCharacteristic(Characteristic.MotionDetected).updateValue(self.detected, undefined);
