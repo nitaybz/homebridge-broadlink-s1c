@@ -1,4 +1,4 @@
-## *Thank you for using this plugin. Unfortunately, I no longer use this device and therefore, there will be no more support for this plugin. I invite one of you to fork or be a contributer in this plugin.
+### *Thank you for using this plugin. Unfortunately, I no longer use this device and therefore, there will be no more support for this plugin. I invite one of you to fork or be a contributer in this plugin.
 
 
 # homebridge-broadlink-s1c
